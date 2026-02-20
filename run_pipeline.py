@@ -10,6 +10,7 @@ Options:
 """
 
 import argparse
+import hashlib
 import json
 import logging
 import sys
@@ -32,6 +33,11 @@ def setup_arg_parser() -> argparse.ArgumentParser:
         "--no-plots",
         action="store_true",
         help="Skip generating visualizations",
+    )
+    parser.add_argument(
+        "--no-clear",
+        action="store_true",
+        help="Don't clear database (keep existing data)",
     )
     parser.add_argument(
         "--clear-db", action="store_true", help="Clear database before loading"
@@ -68,13 +74,57 @@ def check_data_files(transactions_path: Path, clients_path: Path) -> bool:
         missing.append(f"Clients file: {clients_path}")
 
     if missing:
-        print("\n❌ Missing data files:")
+        print("\nMissing data files:")
         for m in missing:
             print(f"  - {m}")
         print("\nPlease place the data files in the correct locations.")
         return False
 
     return True
+
+
+def get_file_hash(file_path: Path) -> str:
+    """Calculate SHA256 hash of file."""
+    sha256_hash = hashlib.sha256()
+    with open(file_path, "rb") as f:
+        for byte_block in iter(lambda: f.read(4096), b""):
+            sha256_hash.update(byte_block)
+    return sha256_hash.hexdigest()
+
+
+def should_clear_database(
+    transactions_path: Path,
+    clients_path: Path,
+    hash_file: Path = Path(".data_hashes.json"),
+) -> bool:
+    """
+    Check if data files have changed since last run.
+
+    Returns:
+        True if database should be cleared, False otherwise.
+    """
+    current_hashes = {
+        "transactions": get_file_hash(transactions_path),
+        "clients": get_file_hash(clients_path),
+    }
+
+    if not hash_file.exists():
+        with open(hash_file, "w") as f:
+            json.dump(current_hashes, f)
+        return True
+
+    try:
+        with open(hash_file, "r") as f:
+            saved_hashes = json.load(f)
+    except (json.JSONDecodeError, FileNotFoundError):
+        return True
+
+    if current_hashes != saved_hashes:
+        with open(hash_file, "w") as f:
+            json.dump(current_hashes, f)
+        return True
+
+    return False
 
 
 def main() -> Optional[int]:
@@ -88,6 +138,16 @@ def main() -> Optional[int]:
     print("ФИНАНСОВЫЙ АНАЛИЗ - ПАЙПЛАЙН")
     print("=" * 80)
 
+    if args.no_clear:
+        should_clear = False
+    elif args.clear_db:
+        should_clear = True
+    else:
+        should_clear = True
+        print(
+            "\nАвтоматическая очистка БД "
+            "(используйте --no-clear чтобы отключить)"
+        )
     if not check_data_files(args.transactions, args.clients):
         return 1
 
@@ -99,12 +159,10 @@ def main() -> Optional[int]:
             transactions_path=args.transactions,
             clients_path=args.clients,
             db_path=args.db,
-            clear=args.clear_db,
+            clear=should_clear,
         )
 
-        print(
-            f"Загружено транзакций: {load_results['transactions_loaded']}"
-        )
+        print(f"Загружено транзакций: {load_results['transactions_loaded']}")
         print(f"Загружено клиентов: {load_results['clients_loaded']}")
 
         print("\nЭТАП 2: АНАЛИЗ ДАННЫХ")
