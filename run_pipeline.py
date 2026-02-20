@@ -1,0 +1,159 @@
+"""
+Main pipeline script.
+
+Usage:
+    python run_pipeline.py [--no-plots] [--clear-db]
+
+Options:
+    --no-plots      Skip generating visualizations
+    --clear-db      Clear database before loading
+"""
+
+import argparse
+import json
+import logging
+import sys
+from datetime import datetime
+from pathlib import Path
+from typing import Optional
+
+from app.application.use_cases.build_warehouse import build_warehouse
+from app.application.use_cases.run_analysis import run_analysis
+
+logger = logging.getLogger(__name__)
+
+
+def setup_arg_parser() -> argparse.ArgumentParser:
+    """Setup command line argument parser."""
+    parser = argparse.ArgumentParser(
+        description="Run ETL and analysis pipeline for financial data"
+    )
+    parser.add_argument(
+        "--no-plots",
+        action="store_true",
+        help="Skip generating visualizations",
+    )
+    parser.add_argument(
+        "--clear-db", action="store_true", help="Clear database before loading"
+    )
+    parser.add_argument(
+        "--transactions",
+        type=Path,
+        default=Path("data/transactions_data.xlsx"),
+        help="Path to transactions Excel file",
+    )
+    parser.add_argument(
+        "--clients",
+        type=Path,
+        default=Path("data/clients_data.json"),
+        help="Path to clients JSON file",
+    )
+    parser.add_argument(
+        "--db",
+        type=Path,
+        default=Path("warehouse.db"),
+        help="Path to SQLite database",
+    )
+    return parser
+
+
+def check_data_files(transactions_path: Path, clients_path: Path) -> bool:
+    """Check if data files exist."""
+    missing = []
+
+    if not transactions_path.exists():
+        missing.append(f"Transactions file: {transactions_path}")
+
+    if not clients_path.exists():
+        missing.append(f"Clients file: {clients_path}")
+
+    if missing:
+        print("\n❌ Missing data files:")
+        for m in missing:
+            print(f"  - {m}")
+        print("\nPlease place the data files in the correct locations.")
+        return False
+
+    return True
+
+
+def main() -> Optional[int]:
+    """Main pipeline execution."""
+    logger = logging.getLogger(__name__)
+
+    parser = setup_arg_parser()
+    args = parser.parse_args()
+
+    print("\n" + "=" * 80)
+    print("ФИНАНСОВЫЙ АНАЛИЗ - ПАЙПЛАЙН")
+    print("=" * 80)
+
+    if not check_data_files(args.transactions, args.clients):
+        return 1
+
+    try:
+        print("\nЭТАП 1: ЗАГРУЗКА ДАННЫХ В ХРАНИЛИЩЕ")
+        print("-" * 40)
+
+        load_results = build_warehouse(
+            transactions_path=args.transactions,
+            clients_path=args.clients,
+            db_path=args.db,
+            clear=args.clear_db,
+        )
+
+        print(
+            f"Загружено транзакций: {load_results['transactions_loaded']}"
+        )
+        print(f"Загружено клиентов: {load_results['clients_loaded']}")
+
+        print("\nЭТАП 2: АНАЛИЗ ДАННЫХ")
+        print("-" * 40)
+
+        analysis_results = run_analysis(
+            db_path=args.db,
+            generate_plots=not args.no_plots,
+        )
+
+        print("\nЭТАП 3: СОХРАНЕНИЕ РЕЗУЛЬТАТОВ")
+        print("-" * 40)
+
+        reports_dir = Path("reports")
+        reports_dir.mkdir(exist_ok=True)
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        json_path = reports_dir / f"analysis_results_{timestamp}.json"
+
+        def json_serializer(obj):
+            if isinstance(obj, Path):
+                return str(obj)
+            raise TypeError(f"Type {type(obj)} not serializable")
+
+        with open(json_path, "w", encoding="utf-8") as f:
+            json.dump(
+                analysis_results,
+                f,
+                indent=2,
+                default=json_serializer,
+                ensure_ascii=False,
+            )
+
+        print(f"Результаты сохранены: {json_path}")
+
+        if not args.no_plots:
+            print("Визуализации сохранены в папке: reports/")
+
+        print("\n" + "=" * 80)
+        print("ПАЙПЛАЙН УСПЕШНО ЗАВЕРШЕН")
+        print("=" * 80 + "\n")
+
+        return 0
+
+    except Exception as e:
+        logger.exception("Pipeline failed")
+        print(f"\nОШИБКА: {e}")
+        return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
