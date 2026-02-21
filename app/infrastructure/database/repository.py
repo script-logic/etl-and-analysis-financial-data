@@ -20,17 +20,18 @@ from .models import (
 from app.domain.entities.transaction import Transaction
 from app.domain.entities.client import Client
 
-
-LevelValues = TypedDict(
-    "LevelValues", {"name": str, "revenue": float, "count": int}
-)
-
 logger = get_logger(__name__)
+
+
+class LevelValues(TypedDict):
+    """Net worth levels."""
+    name: str
+    revenue: float
+    count: int
 
 
 class ClientSegmentAnalysis(TypedDict):
     """Analysis result by client segment."""
-
     segment: str
     total_revenue: float
     transaction_count: int
@@ -43,7 +44,6 @@ class TransactionRepository:
 
     def __init__(self, session: Session):
         self.session = session
-        self._seen_in_session: set[str] = set()
 
     def add(self, transaction: Transaction) -> None:
         """
@@ -57,8 +57,6 @@ class TransactionRepository:
             return
 
         transaction_id = str(transaction.id)
-        if transaction_id in self._seen_in_session:
-            return
 
         orm_obj = TransactionTable(
             id=transaction_id,
@@ -78,11 +76,9 @@ class TransactionRepository:
         )
 
         self.session.merge(orm_obj)
-        self._seen_in_session.add(transaction_id)
 
     def add_many(self, transactions: List[Transaction]) -> None:
         """Bulk insert multiple transactions with duplicate detection."""
-        self._seen_in_session.clear()
 
         for transaction in transactions:
             self.add(transaction)
@@ -93,10 +89,6 @@ class TransactionRepository:
             logger.error(f"Integrity error during bulk insert: {e}")
             self.session.rollback()
             raise
-
-    def clear_batch_cache(self) -> None:
-        """Clear the batch duplicate cache."""
-        self._seen_in_session.clear()
 
     def get_top_services_by_count(
         self, limit: int = 5

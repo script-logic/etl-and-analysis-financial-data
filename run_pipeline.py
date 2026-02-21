@@ -11,17 +11,18 @@ import json
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
+import orjson
 from structlog import get_logger
 
 from app.application.use_cases.build_warehouse import build_warehouse
 from app.application.use_cases.run_analysis import run_analysis
 from app.config import get_config
+from app.config.config import AppConfig
 from app.infrastructure.logger.manager import setup_logging
 
 
-def setup_arg_parser() -> argparse.ArgumentParser:
+def setup_arg_parser(config: AppConfig) -> argparse.ArgumentParser:
     """Setup command line argument parser."""
     parser = argparse.ArgumentParser(
         description="Run ETL and analysis pipeline for financial data"
@@ -42,32 +43,32 @@ def setup_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--transactions",
         type=Path,
-        default=Path("data/transactions_data.xlsx"),
+        default=Path(config.data_paths.transactions_file),
         help="Path to transactions Excel file",
     )
     parser.add_argument(
         "--clients",
         type=Path,
-        default=Path("data/clients_data.json"),
+        default=Path(config.data_paths.clients_file),
         help="Path to clients JSON file",
     )
     parser.add_argument(
         "--db",
         type=Path,
-        default=Path("warehouse.db"),
+        default=Path(config.data_paths.database_file),
         help="Path to SQLite database",
     )
     parser.add_argument(
         "--forecast-months",
         type=int,
-        default=1,
-        help="Number of months to forecast (default: 1)",
+        default=config.analysis.forecast_months,
+        help="Number of months to forecast",
     )
     parser.add_argument(
         "--min-months-forecast",
         type=int,
-        default=3,
-        help="Minimum months required for forecast (default: 3)",
+        default=config.analysis.min_months_for_forecast,
+        help="Minimum months required for forecast",
     )
     return parser
 
@@ -104,7 +105,7 @@ def get_file_hash(file_path: Path) -> str:
 def should_clear_database(
     transactions_path: Path,
     clients_path: Path,
-    hash_file: Path = Path(".data_hashes.json"),
+    hash_file: Path,
 ) -> bool:
     """
     Check if data files have changed since last run.
@@ -136,13 +137,13 @@ def should_clear_database(
     return False
 
 
-def main() -> Optional[int]:
+def main() -> int | None:
     """Main pipeline execution."""
     config = get_config()
     setup_logging(config.logger_adapter)
     logger = get_logger(__name__)
 
-    parser = setup_arg_parser()
+    parser = setup_arg_parser(config)
     args = parser.parse_args()
 
     print("\n" + "=" * 80)
@@ -154,11 +155,11 @@ def main() -> Optional[int]:
     elif args.clear_db:
         should_clear = True
     else:
-        should_clear = should_clear_database(args.transactions, args.clients)
+        should_clear = should_clear_database(
+            args.transactions, args.clients, config.data_paths.data_hashes_file
+        )
         if should_clear:
             print("\n Автоматическая очистка БД (файлы данных изменились)")
-        else:
-            print("\n Используем существующую БД (файлы не менялись)")
 
     if not check_data_files(args.transactions, args.clients):
         return 1
@@ -167,18 +168,20 @@ def main() -> Optional[int]:
         print("\n ЭТАП 1: ЗАГРУЗКА ДАННЫХ В ХРАНИЛИЩЕ")
         print("-" * 40)
 
-        load_results = build_warehouse(
-            transactions_path=args.transactions,
-            clients_path=args.clients,
-            db_path=args.db,
-            clear=should_clear,
-        )
+        if should_clear or not config.data_paths.database_file.exists():
+            load_results = build_warehouse(
+                transactions_path=args.transactions,
+                clients_path=args.clients,
+                db_path=args.db,
+                clear=should_clear,
+            )
 
-        print(
-            f"   Загружено транзакций: {load_results['transactions_loaded']}"
-        )
-        print(f"   Загружено клиентов: {load_results['clients_loaded']}")
-
+            print(
+                f" Загружено транзакций: {load_results['transactions_loaded']}"
+            )
+            print(f" Загружено клиентов: {load_results['clients_loaded']}")
+        else:
+            print(" Файлы не менялись. Используем существующую базу данных.")
         print("\n ЭТАП 2: АНАЛИЗ ДАННЫХ")
         print("-" * 40)
 
@@ -192,11 +195,15 @@ def main() -> Optional[int]:
         print("\n ЭТАП 3: СОХРАНЕНИЕ РЕЗУЛЬТАТОВ")
         print("-" * 40)
 
-        reports_dir = Path("reports")
+        reports_dir = config.data_paths.reports_dir
         reports_dir.mkdir(exist_ok=True)
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        json_path = reports_dir / f"analysis_results_{timestamp}.json"
+        json_path = (
+            reports_dir
+            / f"{config.data_paths.analysis_results_json_file_prefix}"
+            f"{timestamp}.json"
+        )
 
         def json_serializer(obj):
             if isinstance(obj, Path):
@@ -204,13 +211,12 @@ def main() -> Optional[int]:
             raise TypeError(f"Type {type(obj)} not serializable")
 
         with open(json_path, "w", encoding="utf-8") as f:
-            json.dump(
+            json_bytes = orjson.dumps(
                 analysis_results,
-                f,
-                indent=2,
                 default=json_serializer,
-                ensure_ascii=False,
+                option=orjson.OPT_INDENT_2,
             )
+            f.write(json_bytes.decode("utf-8"))
 
         print(f"  Результаты сохранены: {json_path}")
 

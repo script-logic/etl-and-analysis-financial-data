@@ -100,7 +100,6 @@ class BuildWarehouseUseCase:
 
     def _load_transactions(self, session, path: Path) -> int:
         """Load and clean transactions."""
-        logger.info(f"Loading transactions from {path}")
 
         loader = self.loader_factory.get_transaction_loader(path)
         repo = TransactionRepository(session)
@@ -126,7 +125,6 @@ class BuildWarehouseUseCase:
 
     def _load_clients(self, session, path: Path) -> int:
         """Load and clean clients."""
-        logger.info(f"Loading clients from {path}")
 
         loader = self.loader_factory.get_client_loader(path)
         repo = ClientRepository(session)
@@ -154,7 +152,7 @@ class BuildWarehouseUseCase:
 def build_warehouse(
     transactions_path: Path | str,
     clients_path: Path | str,
-    db_path: Path | str = "warehouse.db",
+    db_path: Path | str = ":memory:",
     clear: bool = False,
 ) -> dict[str, int]:
     """

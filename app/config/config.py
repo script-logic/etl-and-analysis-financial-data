@@ -41,6 +41,10 @@ class DataPathsConfig(BaseSettings):
         default=Path("warehouse.db"),
         description="Path to SQLite database",
     )
+    analysis_results_json_file_prefix: Path = Field(
+        default=Path("analysis_results_"),
+        description="Prefix for analysis results JSON file name",
+    )
     reports_dir: Path = Field(
         default=Path("reports"),
         description="Directory for reports and visualizations",
@@ -81,7 +85,7 @@ class AnalysisConfig(BaseSettings):
         le=12,
         description="Number of months to forecast",
     )
-    min_transactions_for_forecast: int = Field(
+    min_months_for_forecast: int = Field(
         default=3,
         ge=1,
         description="Minimum months of data required for forecast",

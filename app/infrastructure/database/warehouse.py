@@ -21,7 +21,7 @@ class Warehouse:
     Handles SQLite connection and session lifecycle.
     """
 
-    def __init__(self, db_path: Path | str = "warehouse.db"):
+    def __init__(self, db_path: Path | str = ":memory:"):
         """
         Initialize warehouse connection.
 
@@ -37,12 +37,14 @@ class Warehouse:
     def _initialize(self) -> None:
         """Create engine and session factory."""
         connect_args: dict[Any, Any] = {
-            "check_same_thread": False,  # Allow multi-threaded access
-            "timeout": 15,  # Wait up to 15s for lock
+            "check_same_thread": False,
+            "timeout": 15,
         }
 
-        # For in-memory database with shared cache
         if self.db_path == ":memory:":
+            logger.warning(
+                "db_path is not configured. Using :memory: instead."
+            )
             connect_args["url"] = True
             connect_args["cached"] = "shared"
 
@@ -83,13 +85,13 @@ class Warehouse:
             logger.info("Warehouse connection closed")
 
     def clear_all(self) -> None:
-        """Clear all data from database (for testing)."""
+        """Clear all data from database."""
         if self.engine:
             Base.metadata.drop_all(self.engine)
             Base.metadata.create_all(self.engine)
         logger.warning("All warehouse data cleared")
 
 
-def create_warehouse(db_path: Path | str = "warehouse.db") -> Warehouse:
+def create_warehouse(db_path: Path | str = ":memory:") -> Warehouse:
     """Create and return a Warehouse instance."""
     return Warehouse(db_path)

@@ -28,7 +28,6 @@ class LoaderFactory:
     def _register_defaults(self):
         """Register built-in loaders."""
         self.register(".xlsx", TransactionExcelLoader)
-        self.register(".xls", TransactionExcelLoader)
         self.register(".json", ClientJsonLoader)
 
     def register(self, extension: str, loader_class: Type[DataLoader]) -> None:
