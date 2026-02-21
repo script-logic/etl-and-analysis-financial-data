@@ -33,9 +33,7 @@ class LoggerManager(metaclass=Singleton):
                 "Call 'setup_logging()' first."
             )
 
-        shared_processors = self.processor_builder.build_shared_chain(
-            self.config
-        )
+        shared_processors = self.processor_builder.build_shared_chain()
         formatter_wrapper = self.processor_builder.build_formatter_wrapper()
 
         structlog.configure(

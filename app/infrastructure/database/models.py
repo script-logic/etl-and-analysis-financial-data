@@ -4,24 +4,17 @@ SQLAlchemy ORM models for the warehouse database.
 These models represent the cleaned and normalized data structure.
 """
 
-from datetime import datetime
-from sqlalchemy import (
-    String,
-    Float,
-    DateTime,
-    Integer,
-    Index,
-    ForeignKey,
-)
+import inflection
+from sqlalchemy import DateTime, Float, ForeignKey, Index, Integer, String
 from sqlalchemy.orm import (
     DeclarativeBase,
-    declared_attr,
-    relationship,
-    mapped_column,
     Mapped,
+    declared_attr,
+    mapped_column,
+    relationship,
 )
 
-import inflection
+from app.utils.datetime_helpers import get_cutoff_date
 
 
 class Base(DeclarativeBase):
@@ -90,7 +83,7 @@ class AnalysisResultTable(Base):
     id = mapped_column(Integer, primary_key=True, autoincrement=True)
     analysis_name = mapped_column(String(100), nullable=False, index=True)
     result_json = mapped_column(String, nullable=False)
-    created_at = mapped_column(DateTime, default=datetime.utcnow)  # TODO
+    created_at = mapped_column(DateTime, default=get_cutoff_date(0))
     parameters = mapped_column(String, nullable=True)
 
     def __repr__(self) -> str:
