@@ -4,5 +4,7 @@ services:
     build: .
     volumes:
       - ./data:/app/data
-      - ./reports:/app/reports
-      - ./warehouse.db:/app/warehouse.db
+      - ./${DATA_PATHS__REPORTS_DIR}:/app/${DATA_PATHS__REPORTS_DIR}
+      - ./${DATA_PATHS__DATABASE_FILE}:/app/${DATA_PATHS__DATABASE_FILE}
+    env_file:
+      - .env

@@ -1,4 +1,24 @@
-.PHONY: install test lint run clean
+DC_FILE := docker-compose.yml
+DC := docker-compose -f $(DC_FILE)
+
+.PHONY: run up down build rebuild install test lint clean
+
+run:
+	poetry run python run_pipeline.py
+
+up:
+	$(DC) up -d
+
+down:
+	$(DC) down
+
+build:
+	$(DC) build
+
+rebuild: 
+	$(MAKE) down
+	$(MAKE) build
+	$(MAKE) up
 
 install:
 	poetry install
@@ -9,9 +29,6 @@ test:
 lint:
 	poetry run ruff check .
 	poetry run mypy .
-
-run:
-	poetry run python run_pipeline.py
 
 clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} +
