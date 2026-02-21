@@ -5,14 +5,15 @@ Factory for creating data loaders.
 from pathlib import Path
 from typing import Dict, Type
 
+from structlog import get_logger
+
 from app.domain.entities.client import Client
 from app.domain.entities.transaction import Transaction
 from app.infrastructure.data_loading.interfaces import DataLoader
 from app.infrastructure.data_loading.excel_loader import TransactionExcelLoader
 from app.infrastructure.data_loading.json_loader import ClientJsonLoader
-import logging
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class LoaderFactory:

@@ -5,6 +5,8 @@ ETL use case: Extract -> Clean -> Load data into warehouse.
 from pathlib import Path
 from typing import Optional
 
+from structlog import get_logger
+
 from app.infrastructure.database.warehouse import Warehouse, create_warehouse
 from app.infrastructure.database.repository import (
     TransactionRepository,
@@ -13,9 +15,8 @@ from app.infrastructure.database.repository import (
 from app.infrastructure.data_loading.factories import LoaderFactory
 from app.infrastructure.data_cleaning import TransactionCleaner, ClientCleaner
 
-import logging
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class BuildWarehouseUseCase:

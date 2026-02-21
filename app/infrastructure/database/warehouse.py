@@ -2,16 +2,16 @@
 Database warehouse initialization and session management.
 """
 
-import logging
 from pathlib import Path
 from typing import Any
 from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.pool import StaticPool
+from structlog import get_logger
 
 from app.infrastructure.database.models import Base
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class Warehouse:

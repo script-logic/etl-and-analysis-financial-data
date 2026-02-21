@@ -2,7 +2,6 @@
 Visualization utilities for analysis results.
 """
 
-import logging
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -12,9 +11,10 @@ import pandas as pd
 import plotly.graph_objects as go
 import seaborn as sns
 from plotly.subplots import make_subplots
+from structlog import get_logger
 from app.domain.entities.client import NetWorthLevel
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class VisualizationService:

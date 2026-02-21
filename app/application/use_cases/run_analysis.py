@@ -7,6 +7,7 @@ from typing import Dict, Any, Optional
 from datetime import datetime
 
 import pandas as pd
+from structlog import get_logger
 
 from app.infrastructure.database.warehouse import Warehouse, create_warehouse
 from app.infrastructure.database.repository import (
@@ -15,10 +16,10 @@ from app.infrastructure.database.repository import (
     AnalysisRepository,
 )
 from app.infrastructure.analysis.visualization import VisualizationService
+from app.infrastructure.analysis.forecasting import create_demand_forecast
 from app.infrastructure.database.models import TransactionTable, ClientTable
-import logging
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class RunAnalysisUseCase:
@@ -40,6 +41,8 @@ class RunAnalysisUseCase:
         self,
         warehouse: Warehouse,
         viz_service: Optional[VisualizationService] = None,
+        forecast_months: int = 1,
+        min_months_for_forecast: int = 3,
     ):
         """
         Initialize analysis use case.
@@ -47,9 +50,13 @@ class RunAnalysisUseCase:
         Args:
             warehouse: Database warehouse instance.
             viz_service: Visualization service (optional).
+            forecast_months: Number of months to forecast.
+            min_months_for_forecast: Minimum months required for forecast.
         """
         self.warehouse = warehouse
         self.viz_service = viz_service or VisualizationService()
+        self.forecast_months = forecast_months
+        self.min_months_for_forecast = min_months_for_forecast
 
     def execute(
         self,
@@ -115,19 +122,29 @@ class RunAnalysisUseCase:
                 )
             )
 
+            logger.info("Calculating monthly trend...")
             results["monthly_trend"] = (
-                transaction_repo.get_monthly_revenue_trend(6)
+                transaction_repo.get_monthly_revenue_trend(
+                    12
+                )
             )
+
             results["clients_without_transactions"] = (
                 client_repo.get_clients_without_transactions()
             )
+
+            logger.info("Generating demand forecast...")
+            forecast = create_demand_forecast(
+                monthly_data=results["monthly_trend"],
+                forecast_months=self.forecast_months,
+                min_months=self.min_months_for_forecast,
+            )
+            results["forecast"] = forecast
 
             if generate_plots:
                 logger.info("Generating visualizations...")
                 viz_results = self._generate_visualizations(session)
                 results["visualizations"] = viz_results
-
-            # results["forecast"] = self._generate_forecast(session)
 
             if save_results:
                 analysis_repo.save_result(
@@ -245,10 +262,48 @@ class RunAnalysisUseCase:
         print("\nАНАЛИЗ ПО СЕГМЕНТАМ КЛИЕНТОВ:")
         for segment in results["client_segments"]:
             print(f"{segment['segment']}:")
-            print(f"Клиентов: {segment['client_count']}")
-            print(f"Выручка: {segment['total_revenue']:,.2f}")
-            print(f"Транзакций: {segment['transaction_count']}")
-            print(f"Средний чек: {segment['avg_transaction']:,.2f}")
+            print(f"  Клиентов: {segment['client_count']}")
+            print(f"  Выручка: {segment['total_revenue']:,.2f}")
+            print(f"  Транзакций: {segment['transaction_count']}")
+            print(f"  Средний чек: {segment['avg_transaction']:,.2f}")
+
+        forecast = results.get("forecast", {})
+        if forecast.get("available", False):
+            print("\nПРОГНОЗ НА СЛЕДУЮЩИЙ МЕСЯЦ:")
+            if forecast.get("count_forecast"):
+                trend = forecast.get("count_trend", "stable")
+                trend_str = {
+                    "increasing": "Рост.",
+                    "decreasing": "Падение.",
+                    "stable": "Боковик.",
+                }.get(trend, "")
+                print(
+                    f"  {trend_str} Транзакций: "
+                    f"{forecast['count_forecast'][0]}"
+                )
+            if forecast.get("revenue_forecast"):
+                trend = forecast.get("revenue_trend", "stable")
+                trend_str = {
+                    "increasing": "Рост.",
+                    "decreasing": "Падение.",
+                    "stable": "Боковик.",
+                }.get(trend, "")
+                print(
+                    f"  {trend_str} Выручка: "
+                    f"{forecast['revenue_forecast'][0]:,.2f}"
+                )
+            if "metrics" in forecast:
+                r2 = forecast["metrics"].get("count_r2")
+                if r2:
+                    quality = (
+                        "хорошее"
+                        if r2 > 0.7
+                        else "среднее" if r2 > 0.3 else "слабое"
+                    )
+                    print(f"  Качество прогноза (R²): {r2:.3f} ({quality})")
+        else:
+            print("\nПРОГНОЗ:")
+            print(f"  {forecast.get('message', 'Прогноз недоступен')}")
 
         print("\n" + "=" * 80)
 
@@ -256,6 +311,8 @@ class RunAnalysisUseCase:
 def run_analysis(
     db_path: Path | str = "warehouse.db",
     generate_plots: bool = True,
+    forecast_months: int = 1,
+    min_months_for_forecast: int = 3,
 ) -> Dict[str, Any]:
     """
     Run analysis with default configuration.
@@ -263,12 +320,18 @@ def run_analysis(
     Args:
         db_path: Path to SQLite database.
         generate_plots: Whether to generate visualizations.
+        forecast_months: Number of months to forecast.
+        min_months_for_forecast: Minimum months required for forecast.
 
     Returns:
         Dict with all analysis results.
     """
     warehouse = create_warehouse(db_path)
-    use_case = RunAnalysisUseCase(warehouse)
+    use_case = RunAnalysisUseCase(
+        warehouse,
+        forecast_months=forecast_months,
+        min_months_for_forecast=min_months_for_forecast,
+    )
 
     try:
         return use_case.execute(generate_plots=generate_plots)

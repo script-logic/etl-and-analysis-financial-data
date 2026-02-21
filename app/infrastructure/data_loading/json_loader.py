@@ -7,11 +7,12 @@ from pathlib import Path
 from typing import Any, Iterator, List, Optional
 from uuid import UUID
 
+from structlog import get_logger
+
 from app.domain.entities.client import Client, Gender
 from app.infrastructure.data_loading.interfaces import JsonLoader
-import logging
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class ClientJsonLoader(JsonLoader[Client]):

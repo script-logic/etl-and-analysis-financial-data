@@ -2,26 +2,23 @@
 Main pipeline script.
 
 Usage:
-    python run_pipeline.py [--no-plots] [--clear-db]
-
-Options:
-    --no-plots      Skip generating visualizations
-    --clear-db      Clear database before loading
+    python run_pipeline.py [--no-plots] [--clear-db] [--forecast-months N]
 """
 
 import argparse
 import hashlib
 import json
-import logging
 import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
+from structlog import get_logger
+
 from app.application.use_cases.build_warehouse import build_warehouse
 from app.application.use_cases.run_analysis import run_analysis
-
-logger = logging.getLogger(__name__)
+from app.config import get_config
+from app.infrastructure.logger.manager import setup_logging
 
 
 def setup_arg_parser() -> argparse.ArgumentParser:
@@ -59,6 +56,18 @@ def setup_arg_parser() -> argparse.ArgumentParser:
         type=Path,
         default=Path("warehouse.db"),
         help="Path to SQLite database",
+    )
+    parser.add_argument(
+        "--forecast-months",
+        type=int,
+        default=1,
+        help="Number of months to forecast (default: 1)",
+    )
+    parser.add_argument(
+        "--min-months-forecast",
+        type=int,
+        default=3,
+        help="Minimum months required for forecast (default: 3)",
     )
     return parser
 
@@ -129,7 +138,9 @@ def should_clear_database(
 
 def main() -> Optional[int]:
     """Main pipeline execution."""
-    logger = logging.getLogger(__name__)
+    config = get_config()
+    setup_logging(config.logger_adapter)
+    logger = get_logger(__name__)
 
     parser = setup_arg_parser()
     args = parser.parse_args()
@@ -143,16 +154,17 @@ def main() -> Optional[int]:
     elif args.clear_db:
         should_clear = True
     else:
-        should_clear = True
-        print(
-            "\nАвтоматическая очистка БД "
-            "(используйте --no-clear чтобы отключить)"
-        )
+        should_clear = should_clear_database(args.transactions, args.clients)
+        if should_clear:
+            print("\n Автоматическая очистка БД (файлы данных изменились)")
+        else:
+            print("\n Используем существующую БД (файлы не менялись)")
+
     if not check_data_files(args.transactions, args.clients):
         return 1
 
     try:
-        print("\nЭТАП 1: ЗАГРУЗКА ДАННЫХ В ХРАНИЛИЩЕ")
+        print("\n ЭТАП 1: ЗАГРУЗКА ДАННЫХ В ХРАНИЛИЩЕ")
         print("-" * 40)
 
         load_results = build_warehouse(
@@ -162,18 +174,22 @@ def main() -> Optional[int]:
             clear=should_clear,
         )
 
-        print(f"Загружено транзакций: {load_results['transactions_loaded']}")
-        print(f"Загружено клиентов: {load_results['clients_loaded']}")
+        print(
+            f"   Загружено транзакций: {load_results['transactions_loaded']}"
+        )
+        print(f"   Загружено клиентов: {load_results['clients_loaded']}")
 
-        print("\nЭТАП 2: АНАЛИЗ ДАННЫХ")
+        print("\n ЭТАП 2: АНАЛИЗ ДАННЫХ")
         print("-" * 40)
 
         analysis_results = run_analysis(
             db_path=args.db,
             generate_plots=not args.no_plots,
+            forecast_months=args.forecast_months,
+            min_months_for_forecast=args.min_months_forecast,
         )
 
-        print("\nЭТАП 3: СОХРАНЕНИЕ РЕЗУЛЬТАТОВ")
+        print("\n ЭТАП 3: СОХРАНЕНИЕ РЕЗУЛЬТАТОВ")
         print("-" * 40)
 
         reports_dir = Path("reports")
@@ -196,20 +212,20 @@ def main() -> Optional[int]:
                 ensure_ascii=False,
             )
 
-        print(f"Результаты сохранены: {json_path}")
+        print(f"  Результаты сохранены: {json_path}")
 
         if not args.no_plots:
-            print("Визуализации сохранены в папке: reports/")
+            print("  Визуализации сохранены в папке: reports/")
 
         print("\n" + "=" * 80)
-        print("ПАЙПЛАЙН УСПЕШНО ЗАВЕРШЕН")
+        print(" ПАЙПЛАЙН УСПЕШНО ЗАВЕРШЕН")
         print("=" * 80 + "\n")
 
         return 0
 
     except Exception as e:
         logger.exception("Pipeline failed")
-        print(f"\nОШИБКА: {e}")
+        print(f"\n ОШИБКА: {e}")
         return 1
 
 

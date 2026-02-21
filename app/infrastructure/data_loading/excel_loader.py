@@ -3,15 +3,16 @@ from pathlib import Path
 from typing import Iterator, Optional, Any
 from uuid import UUID
 
+from structlog import get_logger
+
 from app.domain.entities.transaction import (
     Transaction,
     FinanceServiceType,
     PaymentMethod,
 )
 from app.infrastructure.data_loading.interfaces import ExcelLoader
-import logging
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class TransactionExcelLoader(ExcelLoader[Transaction]):

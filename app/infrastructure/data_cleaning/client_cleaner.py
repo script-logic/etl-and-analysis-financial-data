@@ -1,14 +1,15 @@
 from typing import List, Optional
 from uuid import UUID
 
+from structlog import get_logger
+
 from app.domain.entities.client import Client
 from app.infrastructure.data_cleaning.interfaces import (
     NonFixableRule,
     DataCleaner,
 )
-import logging
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class ClientCleaner(DataCleaner[Client]):
