@@ -1,0 +1,8 @@
+version: '3.8'
+services:
+  analyzer:
+    build: .
+    volumes:
+      - ./data:/app/data
+      - ./reports:/app/reports
+      - ./warehouse.db:/app/warehouse.db
