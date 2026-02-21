@@ -124,9 +124,7 @@ class RunAnalysisUseCase:
 
             logger.info("Calculating monthly trend...")
             results["monthly_trend"] = (
-                transaction_repo.get_monthly_revenue_trend(
-                    12
-                )
+                transaction_repo.get_monthly_revenue_trend(12)
             )
 
             results["clients_without_transactions"] = (

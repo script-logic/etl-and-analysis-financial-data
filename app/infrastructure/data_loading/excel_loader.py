@@ -81,7 +81,7 @@ class TransactionExcelLoader(ExcelLoader[Transaction]):
             if missing_cols:
                 raise ValueError(f"Missing columns: {missing_cols}")
 
-            logger.info(f"Loaded {len(df)} rows from Excel")
+            logger.info(f"Loading {len(df)} rows from Excel")
 
             for _, row in df.iterrows():
                 transaction = self._row_to_transaction(row)
@@ -118,11 +118,12 @@ class TransactionExcelLoader(ExcelLoader[Transaction]):
             client_id = self._parse_uuid(row.get("client_id"))
 
             transaction_date = self._parse_date(row.get("transaction_date"))
-
-            amount = self._parse_amount(row.get("amount"))
+            raw = row.get("amount")
+            amount = self._parse_amount(raw)
             if amount is None:
-                logger.warning(
-                    f"Skipping transaction {transaction_id}: invalid amount"
+                logger.debug(
+                    f"Skipping transaction {transaction_id}: invalid amount. "
+                    f"Raw amount: {raw}"
                 )
                 return None
 

@@ -75,14 +75,13 @@ class ProcessorBuilder:
         self, logging_config: ILoggingConfig
     ) -> list[ILogProcessor]:
         chain = self.build_base_chain()
-        chain.append(
-            self.factory.create(
-                ProcessorNames.CONTEXT_ADDER,
-                logging_config=logging_config,
-            )
-        )
+        # chain.append(
+        #     self.factory.create(
+        #         ProcessorNames.CONTEXT_ADDER,
+        #         logging_config=logging_config,
+        #     )
+        # )
         chain.append(self.factory.create(ProcessorNames.MESSAGE_CLEANER))
-        # processors.extend(shared_processors)
         chain.extend(self.additional_processors)
         return chain
 
@@ -157,7 +156,7 @@ class PositionalArgsFormatterStrategy(BaseProcessorStrategy):
 
 @register_in(ProcessorFactory, ProcessorNames.TIMESTAMP)
 class TimestampStamperStrategy(BaseProcessorStrategy):
-    def __init__(self, fmt: str | None = "iso") -> None:
+    def __init__(self, fmt: str | None = '%Y-%m-%d %H:%M:%S') -> None:
         self.processor: Processor = structlog.processors.TimeStamper(fmt=fmt)
 
 

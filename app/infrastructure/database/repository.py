@@ -6,9 +6,11 @@ Separates business logic from data access logic.
 
 import json
 from datetime import datetime, timedelta
+from sqlite3 import IntegrityError
 from typing import List, Dict, Any, Optional, TypedDict
 from sqlalchemy import case, func, desc, and_
 from sqlalchemy.orm import Session
+from structlog import get_logger
 
 from .models import (
     ClientTable,
@@ -22,6 +24,8 @@ from app.domain.entities.client import Client
 LevelValues = TypedDict(
     "LevelValues", {"name": str, "revenue": float, "count": int}
 )
+
+logger = get_logger(__name__)
 
 
 class ClientSegmentAnalysis(TypedDict):
@@ -39,16 +43,25 @@ class TransactionRepository:
 
     def __init__(self, session: Session):
         self.session = session
+        self._seen_in_session: set[str] = set()
 
     def add(self, transaction: Transaction) -> None:
         """
-        Add a single transaction to database.
+        Add a single transaction to database using merge to handle duplicates.
 
         Args:
             transaction: Domain transaction entity
         """
+        if not transaction.id:
+            logger.debug("Skipping transaction without ID")
+            return
+
+        transaction_id = str(transaction.id)
+        if transaction_id in self._seen_in_session:
+            return
+
         orm_obj = TransactionTable(
-            id=str(transaction.id) if transaction.id else None,
+            id=transaction_id,
             client_id=(
                 str(transaction.client_id) if transaction.client_id else None
             ),
@@ -59,15 +72,31 @@ class TransactionRepository:
             city=transaction.city,
             consultant=transaction.consultant,
             service_category=transaction.service_category.value,
-            payment_method_category=transaction.payment_method_category.value
-            or "UNKNOWN",
+            payment_method_category=(
+                transaction.payment_method_category.value or "UNKNOWN"
+            ),
         )
-        self.session.add(orm_obj)
+
+        self.session.merge(orm_obj)
+        self._seen_in_session.add(transaction_id)
 
     def add_many(self, transactions: List[Transaction]) -> None:
-        """Bulk insert multiple transactions."""
+        """Bulk insert multiple transactions with duplicate detection."""
+        self._seen_in_session.clear()
+
         for transaction in transactions:
             self.add(transaction)
+
+        try:
+            self.session.flush()
+        except IntegrityError as e:
+            logger.error(f"Integrity error during bulk insert: {e}")
+            self.session.rollback()
+            raise
+
+    def clear_batch_cache(self) -> None:
+        """Clear the batch duplicate cache."""
+        self._seen_in_session.clear()
 
     def get_top_services_by_count(
         self, limit: int = 5
