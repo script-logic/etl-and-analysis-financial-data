@@ -205,6 +205,14 @@ def print_summary(results: dict[str, Any]) -> None:
         print("\nПРОГНОЗ:")
         print(f"  {forecast.get('message', 'Прогноз недоступен')}")
 
+    if "report" in results:
+        report_info = results["report"]
+        print("\n" + "_" * 80)
+        print("\nОТЧЁТЫ СОЗДАНЫ:")
+        print(f"  📄 Markdown: {report_info['markdown']}")
+        print(f"  📊 JSON: {report_info['json']}")
+        print(f"  📁 Папка: {report_info['folder']}")
+
     print("\n" + "_" * 80)
     print("\n")
 
@@ -262,7 +270,7 @@ def main() -> int | None:
             min_months_for_forecast=args.min_months_forecast,
         )
 
-        logger.info("STAGE 3: SAVING RESULTS")
+        logger.info("STAGE 3: REPORT GENERATION")
 
         reports_dir = config.data_paths.reports_dir
         reports_dir.mkdir(exist_ok=True)

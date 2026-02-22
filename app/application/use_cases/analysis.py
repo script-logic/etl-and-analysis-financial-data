@@ -6,11 +6,13 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+import orjson
 import pandas as pd
 from structlog import get_logger
 
 from app.config import AppConfig
 from app.infrastructure.analysis import (
+    ReportService,
     VisualizationService,
     create_demand_forecast,
 )
@@ -47,6 +49,7 @@ class RunAnalysisUseCase:
         config: AppConfig,
         warehouse: Warehouse,
         viz_service: VisualizationService | None = None,
+        report_service: ReportService | None = None,
         forecast_months: int = 1,
         min_months_for_forecast: int = 3,
     ):
@@ -56,11 +59,15 @@ class RunAnalysisUseCase:
         Args:
             warehouse: Database warehouse instance.
             viz_service: Visualization service (optional).
+            report_service: Report service (optional).
             forecast_months: Number of months to forecast.
             min_months_for_forecast: Minimum months required for forecast.
         """
         self.warehouse = warehouse
         self.viz_service = viz_service or VisualizationService(
+            config.data_paths.reports_dir
+        )
+        self.report_service = report_service or ReportService(
             config.data_paths.reports_dir
         )
         self.forecast_months = forecast_months
@@ -83,6 +90,15 @@ class RunAnalysisUseCase:
         """
         logger.info("Starting data analysis")
 
+        if generate_plots:
+            report_dir, metadata_dir = (
+                self.report_service.create_report_folder()
+            )
+            self.viz_service = VisualizationService(metadata_dir)
+        else:
+            report_dir, metadata_dir = (
+                self.report_service.create_report_folder()
+            )
         session = self.warehouse.get_session()
 
         try:
@@ -150,6 +166,19 @@ class RunAnalysisUseCase:
             if generate_plots:
                 logger.info("Generating visualizations...")
                 viz_results = self._generate_visualizations(session)
+                json_path = self._save_json_results(results, metadata_dir)
+                viz_results["json_data"] = str(json_path)
+                md_path = self.report_service.save_markdown_report(
+                    results, viz_results
+                )
+                results["report"] = {
+                    "markdown": str(md_path),
+                    "folder": str(report_dir),
+                    "json": str(json_path),
+                    "visualizations": viz_results,
+                }
+
+                logger.info(f"Report generated: {md_path}")
                 results["visualizations"] = viz_results
 
             if save_results:
@@ -165,6 +194,33 @@ class RunAnalysisUseCase:
 
         finally:
             session.close()
+
+    def _save_json_results(
+        self,
+        results: dict[str, Any],
+        output_dir: Path,
+    ) -> Path:
+        """Save analysis results as JSON."""
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        json_path = output_dir / f"analysis_results_{timestamp}.json"
+
+        def json_serializer(obj):
+            if isinstance(obj, Path):
+                return str(obj)
+            if isinstance(obj, datetime):
+                return obj.isoformat()
+            raise TypeError(f"Type {type(obj)} not serializable")
+
+        with open(json_path, "w", encoding="utf-8") as f:
+            json_bytes = orjson.dumps(
+                results,
+                default=json_serializer,
+                option=orjson.OPT_INDENT_2,
+            )
+            f.write(json_bytes.decode("utf-8"))
+
+        logger.info(f"Saved JSON results: {json_path}")
+        return json_path
 
     def _generate_visualizations(self, session) -> dict[str, str]:
         """
