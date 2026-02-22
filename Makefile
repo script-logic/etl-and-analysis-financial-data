@@ -1,7 +1,7 @@
 DC_FILE := docker-compose.yml
 DC := docker-compose -f $(DC_FILE)
 
-.PHONY: run up down build rebuild install test lint clean
+.PHONY: run up down build rebuild test lint clean
 
 run:
 	poetry run python run_pipeline.py
@@ -15,13 +15,10 @@ down:
 build:
 	$(DC) build
 
-rebuild: 
+rebuild:
 	$(MAKE) down
 	$(MAKE) build
 	$(MAKE) up
-
-install:
-	poetry install
 
 test:
 	poetry run pytest
