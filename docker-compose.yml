@@ -1,6 +1,5 @@
-version: '3.8'
 services:
-  analyzer:
+  app:
     build: .
     volumes:
       - ./data:/app/data
@@ -8,3 +7,4 @@ services:
       - ./${DATA_PATHS__DATABASE_FILE}:/app/${DATA_PATHS__DATABASE_FILE}
     env_file:
       - .env
+    command: python run_pipeline.py

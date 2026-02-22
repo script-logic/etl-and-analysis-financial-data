@@ -7,6 +7,9 @@ run:
 	poetry run python run_pipeline.py
 
 up:
+	$(DC) up
+
+up-detached:
 	$(DC) up -d
 
 down:
