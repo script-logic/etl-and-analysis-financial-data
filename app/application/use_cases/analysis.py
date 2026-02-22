@@ -4,11 +4,12 @@ Analysis use case: Run all required analyses and generate reports.
 
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 import pandas as pd
 from structlog import get_logger
 
+from app.config import AppConfig
 from app.infrastructure.analysis import (
     VisualizationService,
     create_demand_forecast,
@@ -43,8 +44,9 @@ class RunAnalysisUseCase:
 
     def __init__(
         self,
+        config: AppConfig,
         warehouse: Warehouse,
-        viz_service: Optional[VisualizationService] = None,
+        viz_service: VisualizationService | None = None,
         forecast_months: int = 1,
         min_months_for_forecast: int = 3,
     ):
@@ -58,7 +60,9 @@ class RunAnalysisUseCase:
             min_months_for_forecast: Minimum months required for forecast.
         """
         self.warehouse = warehouse
-        self.viz_service = viz_service or VisualizationService()
+        self.viz_service = viz_service or VisualizationService(
+            config.data_paths.reports_dir
+        )
         self.forecast_months = forecast_months
         self.min_months_for_forecast = min_months_for_forecast
 
@@ -157,14 +161,12 @@ class RunAnalysisUseCase:
                 session.commit()
                 logger.info("Saved analysis results to database")
 
-            self._print_summary(results)
-
             return results
 
         finally:
             session.close()
 
-    def _generate_visualizations(self, session) -> Dict[str, str]:
+    def _generate_visualizations(self, session) -> dict[str, str]:
         """
         Generate all visualizations.
 
@@ -200,7 +202,8 @@ class RunAnalysisUseCase:
         viz_results["revenue_by_service"] = str(path)
 
         age_df = (
-            merged_df.groupby("age")["amount"]
+            merged_df
+            .groupby("age")["amount"]
             .agg(["mean", "count"])
             .reset_index()
             .rename(
@@ -208,15 +211,13 @@ class RunAnalysisUseCase:
             )
         )
 
-        age_data: list[Dict[str, Any]] = []
+        age_data: list[dict[str, Any]] = []
         for _, row in age_df.iterrows():
-            age_data.append(
-                {
-                    "age": int(row["age"]) if pd.notna(row["age"]) else 0,
-                    "avg_amount": float(row["avg_amount"]),
-                    "transaction_count": int(row["transaction_count"]),
-                }
-            )
+            age_data.append({
+                "age": int(row["age"]) if pd.notna(row["age"]) else 0,
+                "avg_amount": float(row["avg_amount"]),
+                "transaction_count": int(row["transaction_count"]),
+            })
 
         path = self.viz_service.plot_revenue_by_age(age_data)
         viz_results["revenue_by_age"] = str(path)
@@ -236,87 +237,14 @@ class RunAnalysisUseCase:
         repo = TransactionRepository(session)
         return repo.get_service_performance()
 
-    def _print_summary(self, results: Dict[str, Any]) -> None:
-        """Print analysis summary to console."""
-        print("\n" + "=" * 80)
-        print("АНАЛИЗ ДАННЫХ - РЕЗУЛЬТАТЫ")
-        print("=" * 80)
-
-        print("\nТОП-5 УСЛУГ ПО КОЛИЧЕСТВУ:")
-        for i, s in enumerate(results["top_services"], 1):
-            print(f"  {i}. {s['service']}: {s['count']} заказов")
-
-        if results["max_revenue_service"]:
-            print("\nУСЛУГА С МАКС. ВЫРУЧКОЙ:")
-            print(
-                f"{results['max_revenue_service']['service']}: "
-                f"{results['max_revenue_service']['revenue']:,.2f}"
-            )
-
-        print("\nРАСПРЕДЕЛЕНИЕ ПО СПОСОБАМ ОПЛАТЫ:")
-        for method, pct in results["payment_methods"].items():
-            print(f"{method}: {pct}%")
-
-        print(
-            f"\nВЫРУЧКА ЗА ПОСЛЕДНИЙ МЕСЯЦ: "
-            f"{results['last_month_revenue']:,.2f}"
-        )
-
-        print("\nАНАЛИЗ ПО СЕГМЕНТАМ КЛИЕНТОВ:")
-        for segment in results["client_segments"]:
-            print(f"{segment['segment']}:")
-            print(f"  Клиентов: {segment['client_count']}")
-            print(f"  Выручка: {segment['total_revenue']:,.2f}")
-            print(f"  Транзакций: {segment['transaction_count']}")
-            print(f"  Средний чек: {segment['avg_transaction']:,.2f}")
-
-        forecast = results.get("forecast", {})
-        if forecast.get("available", False):
-            print("\nПРОГНОЗ НА СЛЕДУЮЩИЙ МЕСЯЦ:")
-            if forecast.get("count_forecast"):
-                trend = forecast.get("count_trend", "stable")
-                trend_str = {
-                    "increasing": "Рост.",
-                    "decreasing": "Падение.",
-                    "stable": "Боковик.",
-                }.get(trend, "")
-                print(
-                    f"  {trend_str} Транзакций: "
-                    f"{forecast['count_forecast'][0]}"
-                )
-            if forecast.get("revenue_forecast"):
-                trend = forecast.get("revenue_trend", "stable")
-                trend_str = {
-                    "increasing": "Рост.",
-                    "decreasing": "Падение.",
-                    "stable": "Боковик.",
-                }.get(trend, "")
-                print(
-                    f"  {trend_str} Выручка: "
-                    f"{forecast['revenue_forecast'][0]:,.2f}"
-                )
-            if "metrics" in forecast:
-                r2 = forecast["metrics"].get("count_r2")
-                if r2:
-                    quality = (
-                        "хорошее"
-                        if r2 > 0.7
-                        else "среднее" if r2 > 0.3 else "слабое"
-                    )
-                    print(f"  Качество прогноза (R²): {r2:.3f} ({quality})")
-        else:
-            print("\nПРОГНОЗ:")
-            print(f"  {forecast.get('message', 'Прогноз недоступен')}")
-
-        print("\n" + "=" * 80)
-
 
 def run_analysis(
-    db_path: Path | str = "warehouse.db",
+    config: AppConfig,
+    db_path: Path | str,
     generate_plots: bool = True,
     forecast_months: int = 1,
     min_months_for_forecast: int = 3,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Run analysis with default configuration.
 
@@ -331,6 +259,7 @@ def run_analysis(
     """
     warehouse = create_warehouse(db_path)
     use_case = RunAnalysisUseCase(
+        config,
         warehouse,
         forecast_months=forecast_months,
         min_months_for_forecast=min_months_for_forecast,

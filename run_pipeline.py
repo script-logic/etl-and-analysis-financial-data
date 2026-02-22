@@ -11,6 +11,7 @@ import json
 import sys
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 import orjson
 from structlog import get_logger
@@ -122,7 +123,7 @@ def should_clear_database(
         return True
 
     try:
-        with open(hash_file, "r") as f:
+        with open(hash_file) as f:
             saved_hashes = json.load(f)
     except (json.JSONDecodeError, FileNotFoundError):
         return True
@@ -135,18 +136,89 @@ def should_clear_database(
     return False
 
 
+def print_summary(results: dict[str, Any]) -> None:
+    """Print analysis summary to console."""
+    print("\n" + "_" * 80)
+    print("\nАНАЛИЗ ДАННЫХ - РЕЗУЛЬТАТЫ")
+    print("_" * 80)
+
+    print("\nТОП-5 УСЛУГ ПО КОЛИЧЕСТВУ:")
+    for i, s in enumerate(results["top_services"], 1):
+        print(f"  {i}. {s['service']}: {s['count']} заказов")
+
+    if results["max_revenue_service"]:
+        print("\nУСЛУГА С МАКСИМАЛЬНОЙ ВЫРУЧКОЙ:")
+        print(
+            f"  {results['max_revenue_service']['service']}: "
+            f"{results['max_revenue_service']['revenue']:,.2f}"
+        )
+
+    print("\nРАСПРЕДЕЛЕНИЕ ПО СПОСОБАМ ОПЛАТЫ:")
+    for method, pct in results["payment_methods"].items():
+        print(f"  {method}: {pct}%")
+
+    print("\nВЫРУЧКА ЗА ПОСЛЕДНИЙ МЕСЯЦ:")
+    print(f"  {results['last_month_revenue']:,.2f}")
+
+    print("\nАНАЛИЗ ПО СЕГМЕНТАМ КЛИЕНТОВ:")
+    for segment in results["client_segments"]:
+        print(f"  {segment['segment']}:")
+        print(f"    Клиентов: {segment['client_count']}")
+        print(f"    Выручка: {segment['total_revenue']:,.2f}")
+        print(f"    Транзакций: {segment['transaction_count']}")
+        print(f"    Средний чек: {segment['avg_transaction']:,.2f}")
+
+    forecast = results.get("forecast", {})
+    if forecast.get("available", False):
+        print("\nПРОГНОЗ НА СЛЕДУЮЩИЙ МЕСЯЦ:")
+        if forecast.get("count_forecast"):
+            trend = forecast.get("count_trend", "stable")
+            trend_str = {
+                "increasing": "Рост.",
+                "decreasing": "Падение.",
+                "stable": "Боковик.",
+            }.get(trend, "")
+            print(f"  {trend_str} Транзакций: {forecast['count_forecast'][0]}")
+        if forecast.get("revenue_forecast"):
+            trend = forecast.get("revenue_trend", "stable")
+            trend_str = {
+                "increasing": "Рост.",
+                "decreasing": "Падение.",
+                "stable": "Боковик.",
+            }.get(trend, "")
+            print(
+                f"  {trend_str} Выручка: "
+                f"{forecast['revenue_forecast'][0]:,.2f}"
+            )
+        if "metrics" in forecast:
+            r2 = forecast["metrics"].get("count_r2")
+            if r2:
+                quality = (
+                    "хорошее"
+                    if r2 > 0.7
+                    else "среднее"
+                    if r2 > 0.3
+                    else "слабое"
+                )
+                print(f"  Качество прогноза (R²): {r2:.3f} ({quality})")
+    else:
+        print("\nПРОГНОЗ:")
+        print(f"  {forecast.get('message', 'Прогноз недоступен')}")
+
+    print("\n" + "_" * 80)
+    print("\n")
+
+
 def main() -> int | None:
     """Main pipeline execution."""
     config = get_config()
     setup_logging(config.logger_adapter)
-    logger = get_logger(__name__)
+    logger = get_logger("run_pipeline.py")
 
     parser = setup_arg_parser(config)
     args = parser.parse_args()
 
-    print("\n" + "=" * 80)
-    print("ФИНАНСОВЫЙ АНАЛИЗ - ПАЙПЛАЙН")
-    print("=" * 80)
+    logger.info("=== START PIPELINE ===")
 
     if args.no_clear:
         should_clear = False
@@ -157,14 +229,13 @@ def main() -> int | None:
             args.transactions, args.clients, config.data_paths.data_hashes_file
         )
         if should_clear:
-            print("\n Автоматическая очистка БД (файлы данных изменились)")
+            logger.info("Automatic database cleanup (data files have changed)")
 
     if not check_data_files(args.transactions, args.clients):
         return 1
 
     try:
-        print("\n ЭТАП 1: ЗАГРУЗКА ДАННЫХ В ХРАНИЛИЩЕ")
-        print("-" * 40)
+        logger.info("STAGE 1: LOADING DATA INTO THE STORAGE")
 
         if should_clear or not config.data_paths.database_file.exists():
             load_results = build_warehouse(
@@ -174,24 +245,24 @@ def main() -> int | None:
                 clear=should_clear,
             )
 
-            print(
-                f" Загружено транзакций: {load_results['transactions_loaded']}"
+            logger.info(
+                f"Transactions loaded: {load_results['transactions_loaded']}"
             )
-            print(f" Загружено клиентов: {load_results['clients_loaded']}")
+            logger.info(f"Clients loaded: {load_results['clients_loaded']}")
         else:
-            print(" Файлы не менялись. Используем существующую базу данных.")
-        print("\n ЭТАП 2: АНАЛИЗ ДАННЫХ")
-        print("-" * 40)
+            logger.info("Files haven't changed. Using existing database.")
+
+        logger.info("STAGE 2: DATA ANALYSIS")
 
         analysis_results = run_analysis(
+            config,
             db_path=args.db,
             generate_plots=not args.no_plots,
             forecast_months=args.forecast_months,
             min_months_for_forecast=args.min_months_forecast,
         )
 
-        print("\n ЭТАП 3: СОХРАНЕНИЕ РЕЗУЛЬТАТОВ")
-        print("-" * 40)
+        logger.info("STAGE 3: SAVING RESULTS")
 
         reports_dir = config.data_paths.reports_dir
         reports_dir.mkdir(exist_ok=True)
@@ -216,20 +287,20 @@ def main() -> int | None:
             )
             f.write(json_bytes.decode("utf-8"))
 
-        print(f"  Результаты сохранены: {json_path}")
+        logger.info(f"Results saved to file: {json_path}")
 
         if not args.no_plots:
-            print("  Визуализации сохранены в папке: reports/")
+            logger.info(f"Visualizations saved to folder: {reports_dir}")
 
-        print("\n" + "=" * 80)
-        print(" ПАЙПЛАЙН УСПЕШНО ЗАВЕРШЕН")
-        print("=" * 80 + "\n")
+        logger.info("PIPELINE COMPLETED SUCCESSFULLY")
+
+        print_summary(analysis_results)
 
         return 0
 
     except Exception as e:
         logger.exception("Pipeline failed")
-        print(f"\n ОШИБКА: {e}")
+        logger.error(f"{e}")
         return 1
 
 

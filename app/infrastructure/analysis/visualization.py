@@ -3,7 +3,7 @@ Visualization utilities for analysis results.
 """
 
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -21,7 +21,7 @@ logger = get_logger(__name__)
 class VisualizationService:
     """Service for creating data visualizations."""
 
-    def __init__(self, output_dir: Path = Path("reports")):
+    def __init__(self, output_dir: Path):
         """
         Initialize visualization service.
 
@@ -36,7 +36,7 @@ class VisualizationService:
 
     def plot_transaction_distribution(
         self,
-        amounts: List[float],
+        amounts: list[float],
         filename: str = "transaction_distribution.png",
     ) -> Path:
         """
@@ -49,7 +49,7 @@ class VisualizationService:
         Returns:
             Path to saved plot.
         """
-        fig, axes = plt.subplots(1, 2, figsize=(15, 5))
+        _, axes = plt.subplots(1, 2, figsize=(15, 5))
 
         axes[0].hist(amounts, bins=50, edgecolor="black", alpha=0.7)
         axes[0].set_title("Распределение сумм транзакций")
@@ -71,7 +71,7 @@ class VisualizationService:
 
     def plot_revenue_by_service(
         self,
-        services: List[Dict[str, Any]],
+        services: list[dict[str, Any]],
         filename: str = "revenue_by_service.png",
     ) -> Path:
         """
@@ -84,7 +84,7 @@ class VisualizationService:
         Returns:
             Path to saved plot.
         """
-        fig, axes = plt.subplots(1, 2, figsize=(15, 6))
+        _, axes = plt.subplots(1, 2, figsize=(15, 6))
 
         df = pd.DataFrame(services)
         df = df.sort_values("total_revenue", ascending=True)
@@ -100,7 +100,7 @@ class VisualizationService:
         axes[0].set_title("Выручка по услугам")
         axes[0].set_xlabel("Выручка")
 
-        for bar, revenue in zip(bars, df["total_revenue"]):
+        for bar, revenue in zip(bars, df["total_revenue"], strict=True):
             axes[0].text(
                 revenue,
                 bar.get_y() + bar.get_height() / 2,
@@ -113,19 +113,15 @@ class VisualizationService:
         others = df.iloc[5:]
 
         if not others.empty:
-            pie_data = pd.concat(
-                [
-                    top_5,
-                    pd.DataFrame(
-                        [
-                            {
-                                "service": "Остальные",
-                                "total_revenue": others["total_revenue"].sum(),
-                            }
-                        ]
-                    ),
-                ]
-            )
+            pie_data = pd.concat([
+                top_5,
+                pd.DataFrame([
+                    {
+                        "service": "Остальные",
+                        "total_revenue": others["total_revenue"].sum(),
+                    }
+                ]),
+            ])
         else:
             pie_data = top_5
 
@@ -146,7 +142,7 @@ class VisualizationService:
         return output_path
 
     def plot_revenue_by_age(
-        self, data: List[Dict[str, Any]], filename: str = "revenue_by_age.png"
+        self, data: list[dict[str, Any]], filename: str = "revenue_by_age.png"
     ) -> Path:
         """
         Plot average transaction amount by client age.
@@ -185,7 +181,7 @@ class VisualizationService:
 
     def plot_monthly_trend(
         self,
-        monthly_data: List[Dict[str, Any]],
+        monthly_data: list[dict[str, Any]],
         filename: str = "monthly_trend.png",
     ) -> Path:
         """
@@ -293,7 +289,8 @@ class VisualizationService:
         )
 
         service_rev = (
-            transactions.groupby("service_category")["amount"]
+            transactions
+            .groupby("service_category")["amount"]
             .sum()
             .reset_index()
         )
@@ -337,9 +334,9 @@ class VisualizationService:
                 values=segments.values,
                 name="Сегменты",
                 hole=0.3,
-                marker=dict(
-                    colors=["#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4"]
-                ),
+                marker={
+                    "colors": ["#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4"]
+                },
             ),
             row=2,
             col=2,
