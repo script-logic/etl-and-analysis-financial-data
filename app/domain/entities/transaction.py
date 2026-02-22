@@ -2,9 +2,9 @@ from datetime import datetime
 from enum import StrEnum
 from uuid import UUID
 
-from pydantic import BaseModel, Field, field_validator, computed_field
+from pydantic import BaseModel, Field, computed_field, field_validator
 
-from app.domain.value_objects.money import Money
+from app.domain.value_objects import Money
 
 
 class FinanceServiceType(StrEnum):

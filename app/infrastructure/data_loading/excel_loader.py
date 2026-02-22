@@ -10,12 +10,9 @@ from openpyxl import load_workbook
 from openpyxl.worksheet.worksheet import Worksheet
 from structlog import get_logger
 
-from app.domain.entities.transaction import (
-    FinanceServiceType,
-    PaymentMethod,
-    Transaction,
-)
-from app.infrastructure.data_loading.interfaces import ExcelLoader
+from app.domain.entities import FinanceServiceType, PaymentMethod, Transaction
+
+from .interfaces import ExcelLoader
 
 logger = get_logger(__name__)
 
@@ -410,13 +407,14 @@ class TransactionExcelLoader(ExcelLoader[Transaction]):
         cleaned = str(value).strip()
 
         if len(cleaned) > 1000:
-            logger.debug(f"String truncated: {len(cleaned)} chars")
-            cleaned = cleaned[:1000] + "..."
+            logger.debug(
+                f"String length suspiciously large: {len(cleaned)} chars"
+            )
 
         return cleaned if cleaned else "EMPTY"
 
     def _safe_get_cell_value(self, cell) -> str:
-        """Безопасное получение значения ячейки с экранированием формул"""
+        """Formulas escape"""
         if cell.data_type == "f":
             logger.warning(
                 f"Formula detected in cell {cell.coordinate}, "

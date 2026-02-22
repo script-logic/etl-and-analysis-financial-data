@@ -4,12 +4,13 @@ Database warehouse initialization and session management.
 
 from pathlib import Path
 from typing import Any
+
 from sqlalchemy import Engine, create_engine
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 from structlog import get_logger
 
-from app.infrastructure.database.models import Base
+from .models import Base
 
 logger = get_logger(__name__)
 

@@ -5,7 +5,15 @@ These models represent the cleaned and normalized data structure.
 """
 
 import inflection
-from sqlalchemy import DateTime, Float, ForeignKey, Index, Integer, String
+from sqlalchemy import (
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    func,
+)
 from sqlalchemy.orm import (
     DeclarativeBase,
     Mapped,
@@ -13,8 +21,6 @@ from sqlalchemy.orm import (
     mapped_column,
     relationship,
 )
-
-from app.utils.datetime_helpers import get_cutoff_date
 
 
 class Base(DeclarativeBase):
@@ -83,8 +89,18 @@ class AnalysisResultTable(Base):
     id = mapped_column(Integer, primary_key=True, autoincrement=True)
     analysis_name = mapped_column(String(100), nullable=False, index=True)
     result_json = mapped_column(String, nullable=False)
-    created_at = mapped_column(DateTime, default=get_cutoff_date(0))
+    created_at = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
     parameters = mapped_column(String, nullable=True)
 
     def __repr__(self) -> str:
-        return f"<AnalysisResultTable({self.analysis_name})>"
+        return (
+            f"<AnalysisResultTable(id={self.id}, "
+            f"analysis_name={self.analysis_name}, "
+            f"result_json={self.result_json}, "
+            f"created_at={self.created_at}, "
+            f"parameters={self.parameters})>"
+        )

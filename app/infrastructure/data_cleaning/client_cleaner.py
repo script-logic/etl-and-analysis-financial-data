@@ -3,11 +3,9 @@ from uuid import UUID
 
 from structlog import get_logger
 
-from app.domain.entities.client import Client
-from app.infrastructure.data_cleaning.interfaces import (
-    NonFixableRule,
-    DataCleaner,
-)
+from app.domain.entities import Client
+
+from .interfaces import DataCleaner, NonFixableRule
 
 logger = get_logger(__name__)
 

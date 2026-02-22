@@ -3,10 +3,10 @@ from typing import Any, Literal, overload
 import structlog
 from structlog.types import EventDict, Processor
 
-from .enums import ProcessorNames
-from app.utils.metaclasses import Singleton
+from app.utils import Singleton
 
 from .decorators import register_in
+from .enums import ProcessorNames
 from .interfaces import (
     BaseLoggerFactory,
     BaseProcessorStrategy,

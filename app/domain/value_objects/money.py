@@ -5,7 +5,7 @@ Provides type-safe monetary values with validation and operations.
 """
 
 from dataclasses import dataclass
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import ROUND_HALF_UP, Decimal
 from typing import Union
 
 
@@ -43,7 +43,6 @@ class Money:
         if decimal_amount < 0:
             raise ValueError(f"Amount cannot be negative: {amount}")
 
-        # Use __setattr__ because of frozen=True
         object.__setattr__(self, "amount", decimal_amount)
 
     def __add__(self, other: "Money") -> "Money":

@@ -4,7 +4,7 @@ from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from typing import Any, Literal, overload
 
-from app.utils.metaclasses import Singleton
+from app.utils import Singleton
 
 from .decorators import register_in
 from .enums import HandlerNames

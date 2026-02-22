@@ -2,22 +2,26 @@
 Analysis use case: Run all required analyses and generate reports.
 """
 
-from pathlib import Path
-from typing import Dict, Any, Optional
 from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, Optional
 
 import pandas as pd
 from structlog import get_logger
 
-from app.infrastructure.database.warehouse import Warehouse, create_warehouse
-from app.infrastructure.database.repository import (
-    TransactionRepository,
-    ClientRepository,
-    AnalysisRepository,
+from app.infrastructure.analysis import (
+    VisualizationService,
+    create_demand_forecast,
 )
-from app.infrastructure.analysis.visualization import VisualizationService
-from app.infrastructure.analysis.forecasting import create_demand_forecast
-from app.infrastructure.database.models import TransactionTable, ClientTable
+from app.infrastructure.database import (
+    AnalysisRepository,
+    ClientRepository,
+    ClientTable,
+    TransactionRepository,
+    TransactionTable,
+    Warehouse,
+    create_warehouse,
+)
 
 logger = get_logger(__name__)
 
@@ -33,8 +37,8 @@ class RunAnalysisUseCase:
     4. Payment method distribution (%)
     5. Last month revenue
     6. Client segmentation analysis
-    7. Visualizations (optional)
-    8. Forecast (optional)
+    7. Visualizations
+    8. Forecast
     """
 
     def __init__(
@@ -150,6 +154,7 @@ class RunAnalysisUseCase:
                     results,
                     {"timestamp": datetime.now().isoformat()},
                 )
+                session.commit()
                 logger.info("Saved analysis results to database")
 
             self._print_summary(results)

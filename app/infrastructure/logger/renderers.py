@@ -5,7 +5,7 @@ import structlog
 from structlog.types import EventDict, Processor, WrappedLogger
 from structlog.typing import ProcessorReturnValue
 
-from app.utils.metaclasses import Singleton
+from app.utils import Singleton
 
 from .decorators import register_in
 from .enums import RendererNames

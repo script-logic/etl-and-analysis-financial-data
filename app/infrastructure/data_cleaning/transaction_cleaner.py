@@ -4,15 +4,9 @@ from uuid import UUID
 
 from structlog import get_logger
 
-from app.domain.entities.transaction import (
-    Transaction,
-    FinanceServiceType,
-    PaymentMethod,
-)
-from app.infrastructure.data_cleaning.interfaces import (
-    NonFixableRule,
-    DataCleaner,
-)
+from app.domain.entities import FinanceServiceType, PaymentMethod, Transaction
+
+from .interfaces import DataCleaner, NonFixableRule
 
 logger = get_logger(__name__)
 
@@ -119,7 +113,7 @@ class AmountRule(NonFixableRule[Transaction]):
         if entity.amount <= 0:
             return False, f"Invalid amount: {entity.amount}"
 
-        if entity.amount > 10_000_000:
+        if entity.amount > 1_000_000_000_000:
             logger.warning(
                 f"Unusually large amount: {entity.amount} for "
                 f"transaction {entity.id}"

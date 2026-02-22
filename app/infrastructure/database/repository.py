@@ -7,18 +7,15 @@ Separates business logic from data access logic.
 import json
 from datetime import datetime, timedelta
 from sqlite3 import IntegrityError
-from typing import List, Dict, Any, Optional, TypedDict
-from sqlalchemy import case, func, desc, and_
+from typing import Any, Dict, List, Optional, TypedDict
+
+from sqlalchemy import and_, case, desc, func
 from sqlalchemy.orm import Session
 from structlog import get_logger
 
-from .models import (
-    ClientTable,
-    TransactionTable,
-    AnalysisResultTable,
-)
-from app.domain.entities.transaction import Transaction
-from app.domain.entities.client import Client
+from app.domain.entities import Client, Transaction
+
+from .models import AnalysisResultTable, ClientTable, TransactionTable
 
 logger = get_logger(__name__)
 
@@ -78,7 +75,7 @@ class TransactionRepository:
         self.session.merge(orm_obj)
 
     def add_many(self, transactions: List[Transaction]) -> None:
-        """Bulk insert multiple transactions with duplicate detection."""
+        """Bulk insert multiple transactions"""
 
         for transaction in transactions:
             self.add(transaction)
@@ -349,7 +346,7 @@ class ClientRepository:
             gender=client.gender.value if client.gender else None,
             net_worth=client.net_worth,
         )
-        self.session.merge(orm_obj)  # Use merge to handle duplicates
+        self.session.merge(orm_obj)
 
     def add_many(self, clients: List[Client]) -> None:
         """Bulk insert multiple clients."""
@@ -426,7 +423,7 @@ class ClientRepository:
             .join(
                 TransactionTable,
                 ClientTable.id == TransactionTable.client_id,
-                isouter=True,  # LEFT JOIN to see clients without transactions
+                isouter=True,
             )
             .group_by("segment")
             .order_by(desc("total_revenue"))

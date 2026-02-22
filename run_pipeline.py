@@ -15,11 +15,9 @@ from pathlib import Path
 import orjson
 from structlog import get_logger
 
-from app.application.use_cases.build_warehouse import build_warehouse
-from app.application.use_cases.run_analysis import run_analysis
-from app.config import get_config
-from app.config.config import AppConfig
-from app.infrastructure.logger.manager import setup_logging
+from app.application.use_cases import build_warehouse, run_analysis
+from app.config import AppConfig, get_config
+from app.infrastructure.logger import setup_logging
 
 
 def setup_arg_parser(config: AppConfig) -> argparse.ArgumentParser:

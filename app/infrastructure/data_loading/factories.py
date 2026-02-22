@@ -7,11 +7,11 @@ from typing import Dict, Type
 
 from structlog import get_logger
 
-from app.domain.entities.client import Client
-from app.domain.entities.transaction import Transaction
-from app.infrastructure.data_loading.interfaces import DataLoader
-from app.infrastructure.data_loading.excel_loader import TransactionExcelLoader
-from app.infrastructure.data_loading.json_loader import ClientJsonLoader
+from app.domain.entities import Client, Transaction
+
+from .excel_loader import TransactionExcelLoader
+from .interfaces import DataLoader
+from .json_loader import ClientJsonLoader
 
 logger = get_logger(__name__)
 

@@ -7,14 +7,14 @@ from typing import Optional
 
 from structlog import get_logger
 
-from app.infrastructure.database.warehouse import Warehouse, create_warehouse
-from app.infrastructure.database.repository import (
-    TransactionRepository,
+from app.infrastructure.data_cleaning import ClientCleaner, TransactionCleaner
+from app.infrastructure.data_loading import LoaderFactory
+from app.infrastructure.database import (
     ClientRepository,
+    TransactionRepository,
+    Warehouse,
+    create_warehouse,
 )
-from app.infrastructure.data_loading.factories import LoaderFactory
-from app.infrastructure.data_cleaning import TransactionCleaner, ClientCleaner
-
 
 logger = get_logger(__name__)
 

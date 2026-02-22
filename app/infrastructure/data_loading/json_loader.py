@@ -2,15 +2,16 @@
 JSON data loader implementation with orjson.
 """
 
-import orjson
 from pathlib import Path
 from typing import Any, Iterator, List, Optional
 from uuid import UUID
 
+import orjson
 from structlog import get_logger
 
-from app.domain.entities.client import Client, Gender
-from app.infrastructure.data_loading.interfaces import JsonLoader
+from app.domain.entities import Client, Gender
+
+from .interfaces import JsonLoader
 
 logger = get_logger(__name__)
 

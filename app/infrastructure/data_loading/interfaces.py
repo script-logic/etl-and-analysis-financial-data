@@ -4,7 +4,7 @@ Interfaces for data loading strategies.
 
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import List, Iterator, Generic, TypeVar
+from typing import Generic, Iterator, List, TypeVar
 
 T = TypeVar("T")
 

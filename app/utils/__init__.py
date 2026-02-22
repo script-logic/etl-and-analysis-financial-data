@@ -1,5 +1,4 @@
-from .datetime_helpers import get_cutoff_date
-
+from .metaclasses import Singleton
 __all__ = [
-    "get_cutoff_date",
+    "Singleton",
 ]

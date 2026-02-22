@@ -1,15 +1,15 @@
-from app.infrastructure.database.models import (
+from .models import (
     Base,
     ClientTable,
     TransactionTable,
     AnalysisResultTable,
 )
-from app.infrastructure.database.repository import (
+from .repository import (
     TransactionRepository,
     ClientRepository,
     AnalysisRepository,
 )
-from app.infrastructure.database.warehouse import Warehouse, create_warehouse
+from .warehouse import Warehouse, create_warehouse
 
 __all__ = [
     "Base",

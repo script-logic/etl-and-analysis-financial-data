@@ -1,13 +1,11 @@
-from app.infrastructure.data_cleaning.interfaces import (
+from .client_cleaner import ClientCleaner
+from .interfaces import (
     BaseValidationRule,
-    NonFixableRule,
-    FixableRule,
     DataCleaner,
+    FixableRule,
+    NonFixableRule,
 )
-from app.infrastructure.data_cleaning.transaction_cleaner import (
-    TransactionCleaner,
-)
-from app.infrastructure.data_cleaning.client_cleaner import ClientCleaner
+from .transaction_cleaner import TransactionCleaner
 
 __all__ = [
     "BaseValidationRule",

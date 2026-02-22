@@ -4,7 +4,7 @@ from typing import Any
 
 import structlog
 
-from app.utils.metaclasses import Singleton
+from app.utils import Singleton
 
 from .enums import LoggersToHijack
 from .handlers import HandlerBuilder, HandlerFactory

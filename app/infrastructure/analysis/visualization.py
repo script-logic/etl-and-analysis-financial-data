@@ -12,7 +12,8 @@ import plotly.graph_objects as go
 import seaborn as sns
 from plotly.subplots import make_subplots
 from structlog import get_logger
-from app.domain.entities.client import NetWorthLevel
+
+from app.domain.entities import NetWorthLevel
 
 logger = get_logger(__name__)
 
