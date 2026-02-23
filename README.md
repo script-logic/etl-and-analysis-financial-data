@@ -50,12 +50,16 @@ A production-ready ETL and analysis pipeline for financial transaction data. Bui
   - Static plots (Matplotlib/Seaborn)
   - Interactive HTML reports (Plotly)
   - Auto-generated Markdown summaries
+  - [Visualization example REPORT.md](https://github.com/script-logic/etl-and-analysis-financial-data/blob/main/finance_analisys_report_example.pdf)
 - **Reporting**:
   - Timestamped folders with complete report packages
 - **Production Ready**:
   - Full type hints with mypy --strict
   - Comprehensive logging with structlog
   - Docker support
+
+
+
 
 ---
 
@@ -320,6 +324,7 @@ ETL и аналитический конвейер для данных фина�
   - Статические графики (Matplotlib/Seaborn)
   - Интерактивные HTML-отчёты (Plotly)
   - Авто-генерируемые Markdown сводки
+  - [Пример визуализации REPORT.md](https://github.com/script-logic/etl-and-analysis-financial-data/blob/main/finance_analisys_report_example.pdf)
 - **Отчётность**:
   - Папки с временными метками и полным комплектом отчётов
 - **Готов к продакшену**:
