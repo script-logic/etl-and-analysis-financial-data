@@ -6,17 +6,16 @@ uploads/*
 scripts
 tree.py
 *.drawio
-clients_data.json
 transactions_data.xlsx
-reports/
 warehouse.db
+.data_hashes.json
+clients_data.json
 
 # Env
 .env
 .env.local
 .env.*.local
 credentials/
-*.json
 *.p12
 *.pem
 .venv/

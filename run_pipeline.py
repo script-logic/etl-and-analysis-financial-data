@@ -9,11 +9,9 @@ import argparse
 import hashlib
 import json
 import sys
-from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-import orjson
 from structlog import get_logger
 
 from app.application.use_cases import build_warehouse, run_analysis
@@ -138,61 +136,84 @@ def should_clear_database(
 
 def print_summary(results: dict[str, Any]) -> None:
     """Print analysis summary to console."""
-    print("\n" + "_" * 80)
-    print("\nАНАЛИЗ ДАННЫХ - РЕЗУЛЬТАТЫ")
+    print("\n" + "_" * 80 + "\n")
+    print("📊 ФИНАНСОВЫЙ АНАЛИЗ - РЕЗУЛЬТАТЫ 📊".center(80))
     print("_" * 80)
 
-    print("\nТОП-5 УСЛУГ ПО КОЛИЧЕСТВУ:")
+    print("\n🏆 ТОП-5 УСЛУГ ПО КОЛИЧЕСТВУ ЗАКАЗОВ:")
     for i, s in enumerate(results["top_services"], 1):
-        print(f"  {i}. {s['service']}: {s['count']} заказов")
+        print(f"   {i}. {s['service']}: {s['count']} заказов")
 
     if results["max_revenue_service"]:
-        print("\nУСЛУГА С МАКСИМАЛЬНОЙ ВЫРУЧКОЙ:")
+        print("\n💰 УСЛУГА С МАКСИМАЛЬНОЙ ВЫРУЧКОЙ:")
         print(
-            f"  {results['max_revenue_service']['service']}: "
+            f"   {results['max_revenue_service']['service']}: "
             f"{results['max_revenue_service']['revenue']:,.2f}"
         )
 
-    print("\nРАСПРЕДЕЛЕНИЕ ПО СПОСОБАМ ОПЛАТЫ:")
-    for method, pct in results["payment_methods"].items():
-        print(f"  {method}: {pct}%")
+    print("\n💳 РАСПРЕДЕЛЕНИЕ ПО СПОСОБАМ ОПЛАТЫ:")
+    for i, (method, pct) in enumerate(results["payment_methods"].items(), 1):
+        print(f"   {i}. {method}: {pct}%")
 
-    print("\nВЫРУЧКА ЗА ПОСЛЕДНИЙ МЕСЯЦ:")
-    print(f"  {results['last_month_revenue']:,.2f}")
+    print("\n💵 ВЫРУЧКА ЗА ПОСЛЕДНИЙ МЕСЯЦ:")
+    print(f"   {results['last_month_revenue']:,.2f}")
 
-    print("\nАНАЛИЗ ПО СЕГМЕНТАМ КЛИЕНТОВ:")
-    for segment in results["client_segments"]:
-        print(f"  {segment['segment']}:")
-        print(f"    Клиентов: {segment['client_count']}")
-        print(f"    Выручка: {segment['total_revenue']:,.2f}")
-        print(f"    Транзакций: {segment['transaction_count']}")
-        print(f"    Средний чек: {segment['avg_transaction']:,.2f}")
+    print("\n👥 АНАЛИЗ ПО СЕГМЕНТАМ КЛИЕНТОВ:")
+    for i, segment in enumerate(results["client_segments"]):
+        medal = (
+            "🥇" if i == 0 else "🥈" if i == 1 else "🥉" if i == 2 else "🔹"
+        )
+        print(f"  {medal} {segment['segment']}:")
+        print(f"       Клиентов: {segment['client_count']}")
+        print(f"       Выручка: {segment['total_revenue']:,.2f}")
+        print(f"       Транзакций: {segment['transaction_count']}")
+        print(f"       Средний чек: {segment['avg_transaction']:,.2f}")
 
     forecast = results.get("forecast", {})
     if forecast.get("available", False):
-        print("\nПРОГНОЗ НА СЛЕДУЮЩИЙ МЕСЯЦ:")
+        print("\n🔮 ПРОГНОЗ НА СЛЕДУЮЩИЙ МЕСЯЦ:")
+
         if forecast.get("count_forecast"):
             trend = forecast.get("count_trend", "stable")
+            trend_emoji = {
+                "increasing": "📈",
+                "decreasing": "📉",
+                "stable": "📊",
+            }.get(trend, "📊")
             trend_str = {
-                "increasing": "Рост.",
-                "decreasing": "Падение.",
-                "stable": "Боковик.",
-            }.get(trend, "")
-            print(f"  {trend_str} Транзакций: {forecast['count_forecast'][0]}")
-        if forecast.get("revenue_forecast"):
-            trend = forecast.get("revenue_trend", "stable")
-            trend_str = {
-                "increasing": "Рост.",
-                "decreasing": "Падение.",
-                "stable": "Боковик.",
+                "increasing": "Рост",
+                "decreasing": "Падение",
+                "stable": "Стабильно",
             }.get(trend, "")
             print(
-                f"  {trend_str} Выручка: "
-                f"{forecast['revenue_forecast'][0]:,.2f}"
+                f"   {trend_emoji} Транзакций: "
+                f"{forecast['count_forecast'][0]} "
+                f"({trend_str})"
             )
+
+        if forecast.get("revenue_forecast"):
+            trend = forecast.get("revenue_trend", "stable")
+            trend_emoji = {
+                "increasing": "📈",
+                "decreasing": "📉",
+                "stable": "📊",
+            }.get(trend, "📊")
+            trend_str = {
+                "increasing": "Рост",
+                "decreasing": "Падение",
+                "stable": "Стабильно",
+            }.get(trend, "")
+            print(
+                f"   {trend_emoji} Выручка: "
+                f"{forecast['revenue_forecast'][0]:,.2f} ({trend_str})"
+            )
+
         if "metrics" in forecast:
             r2 = forecast["metrics"].get("count_r2")
             if r2:
+                quality_emoji = (
+                    "🟢" if r2 > 0.7 else "🟡" if r2 > 0.3 else "🔴"
+                )
                 quality = (
                     "хорошее"
                     if r2 > 0.7
@@ -200,10 +221,13 @@ def print_summary(results: dict[str, Any]) -> None:
                     if r2 > 0.3
                     else "слабое"
                 )
-                print(f"  Качество прогноза (R²): {r2:.3f} ({quality})")
+                print(
+                    f"   ❓ Качество прогноза (R²): {r2:.3f} "
+                    f"{quality_emoji} ({quality})"
+                )
     else:
-        print("\nПРОГНОЗ:")
-        print(f"  {forecast.get('message', 'Прогноз недоступен')}")
+        print("\n🔮 ПРОГНОЗ:")
+        print(f"  ⚠️ {forecast.get('message', 'Прогноз недоступен')}")
 
     if "report" in results:
         report_info = results["report"]
@@ -271,36 +295,6 @@ def main() -> int | None:
         )
 
         logger.info("STAGE 3: REPORT GENERATION")
-
-        reports_dir = config.data_paths.reports_dir
-        reports_dir.mkdir(exist_ok=True)
-
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        json_path = (
-            reports_dir
-            / f"{config.data_paths.analysis_results_json_file_prefix}"
-            f"{timestamp}.json"
-        )
-
-        def json_serializer(obj):
-            if isinstance(obj, Path):
-                return str(obj)
-            raise TypeError(f"Type {type(obj)} not serializable")
-
-        with open(json_path, "w", encoding="utf-8") as f:
-            json_bytes = orjson.dumps(
-                analysis_results,
-                default=json_serializer,
-                option=orjson.OPT_INDENT_2,
-            )
-            f.write(json_bytes.decode("utf-8"))
-
-        logger.info(f"Results saved to file: {json_path}")
-
-        if not args.no_plots:
-            logger.info(f"Visualizations saved to folder: {reports_dir}")
-
-        logger.info("PIPELINE COMPLETED SUCCESSFULLY")
 
         print_summary(analysis_results)
 
