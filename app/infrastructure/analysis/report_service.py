@@ -202,15 +202,33 @@ class ReportService:
         }
 
         for viz_name, viz_path in viz_paths.items():
-            if viz_name in viz_titles:
+            if viz_name in viz_titles and viz_name != "html_report":
                 path = (
                     Path(viz_path) if isinstance(viz_path, str) else viz_path
                 )
-                relative_path = path.relative_to(self.report_dir)
+                relative_path = str(path.relative_to(self.report_dir)).replace(
+                    "\\", "/"
+                )
                 md_lines.append(f"### {viz_titles[viz_name]}")
                 md_lines.append("")
                 md_lines.append(f"![]({relative_path})")
                 md_lines.append("")
+
+        if "html_report" in viz_paths:
+            html_path = Path(viz_paths["html_report"])
+            html_relative = str(
+                html_path.relative_to(self.report_dir)
+            ).replace("\\", "/")
+            md_lines.append(f"### {viz_titles['html_report']}")
+            md_lines.append("")
+            md_lines.append(
+                "Открыть интерактивный отчёт в браузере: "
+                f"[{html_relative}]({html_relative})"
+            )
+            md_lines.append(
+                "(ссылка доступна только при локальном размещении файла)"
+            )
+            md_lines.append("")
 
         md_lines.append("---")
         md_lines.append("")
