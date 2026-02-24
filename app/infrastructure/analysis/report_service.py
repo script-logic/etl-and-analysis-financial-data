@@ -101,6 +101,19 @@ class ReportService:
             )
             md_lines.append("")
 
+        md_lines.append("## Средняя сумма транзакций по городам")
+        md_lines.append("")
+
+        avg_by_city = analysis_results.get("avg_by_city", [])
+        if avg_by_city:
+            for item in avg_by_city[:]:
+                md_lines.append(
+                    f"- **{item['city']}**: {item['avg_amount']:,.2f}"
+                )
+        else:
+            md_lines.append("_Нет данных по городам_")
+        md_lines.append("")
+
         md_lines.append("## Распределение по способам оплаты")
         md_lines.append("")
         for method, pct in analysis_results.get("payment_methods", {}).items():

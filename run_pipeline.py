@@ -144,6 +144,10 @@ def print_summary(results: dict[str, Any]) -> None:
     for i, s in enumerate(results["top_services"], 1):
         print(f"   {i}. {s['service']}: {s['count']} заказов")
 
+    print("\n🏙️  СРЕДНЯЯ СУММА ТРАНЗАКЦИЙ ПО ГОРОДАМ:")
+    for i, city_data in enumerate(results.get("avg_by_city", [])[:], 1):
+        print(f"   {i}. {city_data['city']}: {city_data['avg_amount']:,.2f}")
+
     if results["max_revenue_service"]:
         print("\n💰 УСЛУГА С МАКСИМАЛЬНОЙ ВЫРУЧКОЙ:")
         print(
