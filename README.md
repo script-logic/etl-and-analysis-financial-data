@@ -1,6 +1,6 @@
 <div align="center">
 
-[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/) [![Poetry](https://img.shields.io/badge/poetry-package%20manager-purple)](https://python-poetry.org/) [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff) [![Type checked: mypy](https://img.shields.io/badge/types-mypy-blue)](https://github.com/python/mypy) [![Docker](https://img.shields.io/badge/docker-ready-2496ED)](https://www.docker.com/) [![Pydantic](https://img.shields.io/badge/pydantic-v2-red)](https://docs.pydantic.dev/) [![SQLAlchemy](https://img.shields.io/badge/sqlalchemy-2.0-orange)](https://www.sqlalchemy.org/) [![Pandas](https://img.shields.io/badge/pandas-2.0-darkblue)](https://pandas.pydata.org/) [![Plotly](https://img.shields.io/badge/plotly-6.0-blueviolet)](https://plotly.com/) [![Matplotlib](https://img.shields.io/badge/matplotlib-3.8-blue)](https://matplotlib.org/) [![Seaborn](https://img.shields.io/badge/seaborn-0.13-lightblue)](https://seaborn.pydata.org/) [![Scikit-learn](https://img.shields.io/badge/scikit--learn-1.3-orange)](https://scikit-learn.org/) [![Structlog](https://img.shields.io/badge/structlog-24.0-lightgrey)](https://www.structlog.org/) [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen)](https://pre-commit.com/) [![License: MIT](https://img.shields.io/badge/license-MIT-green)](https://opensource.org/licenses/MIT)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/) [![Poetry](https://img.shields.io/badge/poetry-package%20manager-purple)](https://python-poetry.org/) [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-brightgreen)](https://github.com/astral-sh/ruff) [![Type checked: mypy](https://img.shields.io/badge/types-mypy-blue)](https://github.com/python/mypy) [![Docker](https://img.shields.io/badge/docker-ready-2496ED)](https://www.docker.com/) [![Pydantic](https://img.shields.io/badge/pydantic-v2-red)](https://docs.pydantic.dev/) [![SQLAlchemy](https://img.shields.io/badge/sqlalchemy-2.0-orange)](https://www.sqlalchemy.org/) [![Pandas](https://img.shields.io/badge/pandas-2.0-darkblue)](https://pandas.pydata.org/) [![Plotly](https://img.shields.io/badge/plotly-6.0-blueviolet)](https://plotly.com/) [![Matplotlib](https://img.shields.io/badge/matplotlib-3.8-blue)](https://matplotlib.org/) [![Seaborn](https://img.shields.io/badge/seaborn-0.13-lightblue)](https://seaborn.pydata.org/) [![Scikit-learn](https://img.shields.io/badge/scikit--learn-1.3-orange)](https://scikit-learn.org/) [![Structlog](https://img.shields.io/badge/structlog-24.0-lightgrey)](https://www.structlog.org/) [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen)](https://pre-commit.com/) [![License: MIT](https://img.shields.io/badge/license-MIT-green)](https://opensource.org/licenses/MIT)
 
 </div>
 
@@ -16,7 +16,8 @@
 
 # 💰 Financial Data Analysis Pipeline
 
-A production-ready ETL and analysis pipeline for financial transaction data. Built with clean architecture, type safety, and testability in mind.
+A production-ready ETL and analysis pipeline for financial transaction data.
+Built with clean architecture and type safety.
 </div>
 
 ---
@@ -171,7 +172,7 @@ python run_pipeline.py [OPTIONS]
 
 Options:
   --no-plots              Skip generating visualizations
-  --no-clear              Don't clear database (keep existing data)
+  --no-clear              Do not clear database (keep existing data)
   --clear-db              Clear database before loading
   --transactions PATH     Path to transactions Excel file
   --clients PATH          Path to clients JSON file
@@ -289,7 +290,7 @@ MIT License - feel free to use and modify.
 # 💰 Конвейер анализа финансовых данных
 
 ETL и аналитический конвейер для данных финансовых транзакций.
-Разработан с  применением принйипов чистой архитектуры и типобезопасностью.
+Разработан с применением принципов чистой архитектуры.
 
 </div>
 
