@@ -4,7 +4,10 @@ services:
     volumes:
       - ./data:/app/data
       - ./${DATA_PATHS__REPORTS_DIR}:/app/${DATA_PATHS__REPORTS_DIR}
-      - ./${DATA_PATHS__DATABASE_FILE}:/app/${DATA_PATHS__DATABASE_FILE}
+      - ./db:/app/db
+    environment:
+      - DATABASE__PATH=/app/${DATABASE__PATH}
+      - DATA_PATHS__REPORTS_DIR=/app/${DATA_PATHS__REPORTS_DIR}
     env_file:
       - .env
     command: python run_pipeline.py

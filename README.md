@@ -147,7 +147,7 @@ Configure via `.env` file (copy from `.env.example`):
 # Data paths
 DATA_PATHS__TRANSACTIONS_FILE=data/transactions_data.xlsx
 DATA_PATHS__CLIENTS_FILE=data/clients_data.json
-DATA_PATHS__DATABASE_FILE=warehouse.db
+DATA_PATHS__DATABASE_FILE=db/warehouse.db
 DATA_PATHS__REPORTS_DIR=reports
 
 # Analysis parameters
@@ -417,7 +417,7 @@ make run
 # Пути к данным
 DATA_PATHS__TRANSACTIONS_FILE=data/transactions_data.xlsx
 DATA_PATHS__CLIENTS_FILE=data/clients_data.json
-DATA_PATHS__DATABASE_FILE=warehouse.db
+DATA_PATHS__DATABASE_FILE=db/warehouse.db
 DATA_PATHS__REPORTS_DIR=reports
 
 # Параметры анализа
