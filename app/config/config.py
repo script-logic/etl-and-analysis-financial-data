@@ -38,7 +38,7 @@ class DataPathsConfig(BaseSettings):
         description="Path to clients JSON file",
     )
     database_file: Path = Field(
-        default=Path("warehouse.db"),
+        default=Path("db/warehouse.db"),
         description="Path to SQLite database",
     )
     analysis_results_json_file_prefix: Path = Field(
