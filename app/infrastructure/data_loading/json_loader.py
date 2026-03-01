@@ -2,8 +2,9 @@
 JSON data loader implementation with orjson.
 """
 
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Any, Iterator, List, Optional
+from typing import Any, ClassVar
 from uuid import UUID
 
 import orjson
@@ -30,7 +31,7 @@ class ClientJsonLoader(JsonLoader[Client]):
     - Net worth with various formats
     """
 
-    REQUIRED_FIELDS = {"id", "age", "gender", "net_worth"}
+    REQUIRED_FIELDS: ClassVar = {"id", "age", "gender", "net_worth"}
     MAX_FILE_SIZE = 100 * 1024 * 1024
     MAX_RECORD_SIZE = 1024 * 1024
     MAX_CHUNK_SIZE = 10000
@@ -130,7 +131,7 @@ class ClientJsonLoader(JsonLoader[Client]):
 
     def _load_lines_safe(self, file) -> Iterator[Client]:
         """Safely load from JSON lines format using orjson."""
-        chunk: List[dict] = []
+        chunk: list[dict] = []
         line_count = 0
         error_count = 0
 
@@ -181,7 +182,7 @@ class ClientJsonLoader(JsonLoader[Client]):
                 f"Processed {line_count} lines with {error_count} errors"
             )
 
-    def _process_chunk_safe(self, chunk: List[dict]) -> Iterator[Client]:
+    def _process_chunk_safe(self, chunk: list[dict]) -> Iterator[Client]:
         """Process a chunk of JSON objects with size validation."""
         for item in chunk:
             try:
@@ -192,24 +193,7 @@ class ClientJsonLoader(JsonLoader[Client]):
                 logger.warning(f"Failed to process record: {e}")
                 continue
 
-    def load_stream(
-        self, source: Path, chunk_size: int = 1000
-    ) -> Iterator[List[Client]]:
-        """Load JSON data in chunks with validation."""
-        if chunk_size > self.MAX_CHUNK_SIZE:
-            logger.warning(
-                "Chunk size {chunk_size} exceeds maximum, "
-                f"using {self.MAX_CHUNK_SIZE}"
-            )
-            chunk_size = self.MAX_CHUNK_SIZE
-
-        self.chunk_size = chunk_size
-        clients = list(self.load(source))
-
-        for i in range(0, len(clients), chunk_size):
-            yield clients[i: i + chunk_size]
-
-    def _dict_to_client(self, data: dict) -> Optional[Client]:
+    def _dict_to_client(self, data: dict) -> Client | None:
         """
         Convert JSON dict to Client entity with security checks.
 
@@ -253,7 +237,7 @@ class ClientJsonLoader(JsonLoader[Client]):
             logger.warning(f"Failed to parse client: {e}")
             return None
 
-    def _parse_uuid(self, value: Any) -> Optional[UUID]:
+    def _parse_uuid(self, value: Any) -> UUID | None:
         """Parse UUID from various formats with validation."""
         if value is None:
             return None
@@ -272,7 +256,7 @@ class ClientJsonLoader(JsonLoader[Client]):
         except (ValueError, AttributeError, TypeError):
             return None
 
-    def _parse_age(self, value: Any) -> Optional[int]:
+    def _parse_age(self, value: Any) -> int | None:
         """Parse age with validation and bounds checking."""
         if value is None:
             return None
@@ -325,7 +309,7 @@ class ClientJsonLoader(JsonLoader[Client]):
 
         return gender_map.get(str_value, Gender.UNKNOWN)
 
-    def _parse_net_worth(self, value: Any) -> Optional[float]:
+    def _parse_net_worth(self, value: Any) -> float | None:
         """Parse net worth with validation and bounds checking."""
         if value is None:
             return None

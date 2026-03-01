@@ -3,7 +3,6 @@ ETL use case: Extract -> Clean -> Load data into warehouse.
 """
 
 from pathlib import Path
-from typing import Optional
 
 from structlog import get_logger
 
@@ -31,9 +30,9 @@ class BuildWarehouseUseCase:
     def __init__(
         self,
         warehouse: Warehouse,
-        loader_factory: Optional[LoaderFactory] = None,
-        transaction_cleaner: Optional[TransactionCleaner] = None,
-        client_cleaner: Optional[ClientCleaner] = None,
+        loader_factory: LoaderFactory | None = None,
+        transaction_cleaner: TransactionCleaner | None = None,
+        client_cleaner: ClientCleaner | None = None,
     ):
         """
         Initialize ETL use case.

@@ -5,7 +5,7 @@ Uses simple linear regression for trend analysis.
 """
 
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -32,15 +32,15 @@ class DemandForecast:
             confidence_level: Confidence level for prediction intervals
         """
         self.confidence_level = confidence_level
-        self.model_counts: Optional[LinearRegression] = None
-        self.model_revenue: Optional[LinearRegression] = None
-        self.history: Optional[pd.DataFrame] = None
+        self.model_counts: LinearRegression | None = None
+        self.model_revenue: LinearRegression | None = None
+        self.history: pd.DataFrame | None = None
 
     def fit(
         self,
-        dates: List[datetime],
-        counts: List[int],
-        revenues: List[float],
+        dates: list[datetime],
+        counts: list[int],
+        revenues: list[float],
     ) -> "DemandForecast":
         """
         Fit regression models to historical data.
@@ -53,13 +53,11 @@ class DemandForecast:
         Returns:
             Self for method chaining
         """
-        df = pd.DataFrame(
-            {
-                "date": dates,
-                "count": counts,
-                "revenue": revenues,
-            }
-        )
+        df = pd.DataFrame({
+            "date": dates,
+            "count": counts,
+            "revenue": revenues,
+        })
         df = df.sort_values("date")
 
         df["days"] = (df["date"] - df["date"].min()).dt.days
@@ -94,7 +92,7 @@ class DemandForecast:
 
     def predict(
         self, periods: int = 1, period_days: int = 30
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Predict future demand.
 
@@ -124,7 +122,7 @@ class DemandForecast:
         )
         future_days_np: NDArray[np.float64] = future_days_raw.reshape(-1, 1)
 
-        result: Dict[str, Any] = {
+        result: dict[str, Any] = {
             "forecast_periods": periods,
             "period_days": period_days,
             "forecast_dates": [d.isoformat() for d in future_dates],
@@ -136,9 +134,7 @@ class DemandForecast:
         if self.model_counts is not None:
             count_pred = self.model_counts.predict(future_days_np)
             count_pred = np.maximum(count_pred, 0)
-            result["count_forecast"] = [
-                int(round(float(c))) for c in count_pred
-            ]
+            result["count_forecast"] = [round(float(c)) for c in count_pred]
 
             X_hist_raw = self.history["days"].to_numpy().reshape(-1, 1)
             X_hist: NDArray[np.float64] = X_hist_raw.astype(np.float64)
@@ -155,7 +151,9 @@ class DemandForecast:
             result["count_trend"] = (
                 "increasing"
                 if coef > 0
-                else "decreasing" if coef < 0 else "stable"
+                else "decreasing"
+                if coef < 0
+                else "stable"
             )
 
         if self.model_revenue is not None:
@@ -182,13 +180,15 @@ class DemandForecast:
             result["revenue_trend"] = (
                 "increasing"
                 if coef > 0
-                else "decreasing" if coef < 0 else "stable"
+                else "decreasing"
+                if coef < 0
+                else "stable"
             )
 
         return result
 
 
-def get_seasonality(self) -> Dict[str, float]:
+def get_seasonality(self) -> dict[str, float]:
     """
     Detect simple seasonality patterns.
 
@@ -203,7 +203,7 @@ def get_seasonality(self) -> Dict[str, float]:
 
     monthly_avg = hist["count"].resample("ME").mean()
 
-    result: Dict[str, float] = {}
+    result: dict[str, float] = {}
     for date, avg in monthly_avg.items():
         month_num = date.month
         month_key = f"month_{month_num:02d}"
@@ -213,10 +213,10 @@ def get_seasonality(self) -> Dict[str, float]:
 
 
 def create_demand_forecast(
-    monthly_data: List[Dict[str, Any]],
+    monthly_data: list[dict[str, Any]],
     forecast_months: int = 1,
     min_months: int = 3,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Create demand forecast from monthly data.
 
@@ -236,9 +236,9 @@ def create_demand_forecast(
             f"have {len(monthly_data)}",
         }
 
-    dates: List[datetime] = []
-    counts: List[int] = []
-    revenues: List[float] = []
+    dates: list[datetime] = []
+    counts: list[int] = []
+    revenues: list[float] = []
 
     for item in monthly_data:
         year_str, month_str = item["period"].split("-")

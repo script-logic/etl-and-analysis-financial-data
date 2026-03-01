@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import List, Optional
 from uuid import UUID
 
 from structlog import get_logger
@@ -18,9 +17,7 @@ class TransactionCleaner(DataCleaner[Transaction]):
     Applies a series of validation rules and fixes where possible.
     """
 
-    def __init__(
-        self, rules: Optional[List[NonFixableRule[Transaction]]] = None
-    ):
+    def __init__(self, rules: list[NonFixableRule[Transaction]] | None = None):
         """
         Initialize cleaner with rules.
 
@@ -29,7 +26,7 @@ class TransactionCleaner(DataCleaner[Transaction]):
         """
         self.rules = rules or self._get_default_rules()
 
-    def _get_default_rules(self) -> List[NonFixableRule[Transaction]]:
+    def _get_default_rules(self) -> list[NonFixableRule[Transaction]]:
         """Get default set of validation rules."""
         return [
             TransactionIdRule(),

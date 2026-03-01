@@ -3,8 +3,9 @@ Interfaces for data loading strategies.
 """
 
 from abc import ABC, abstractmethod
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Generic, Iterator, List, TypeVar
+from typing import Generic, TypeVar
 
 T = TypeVar("T")
 
@@ -47,18 +48,4 @@ class ExcelLoader(DataLoader[T], ABC):
 class JsonLoader(DataLoader[T], ABC):
     """Interface for JSON-specific loaders."""
 
-    @abstractmethod
-    def load_stream(
-        self, source: Path, chunk_size: int = 1000
-    ) -> Iterator[List[T]]:
-        """
-        Load JSON data in chunks for large files.
-
-        Args:
-            source: Path to JSON file.
-            chunk_size: Number of records per chunk.
-
-        Yields:
-            Lists of domain entities.
-        """
-        pass
+    pass

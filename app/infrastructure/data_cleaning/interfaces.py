@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Generic, List, TypeVar
+from typing import Generic, TypeVar
 
 T = TypeVar("T")
 
@@ -59,7 +59,7 @@ class DataCleaner(ABC, Generic[T]):
         """
         pass
 
-    def clean_batch(self, entities: List[T]) -> List[T]:
+    def clean_batch(self, entities: list[T]) -> list[T]:
         """
         Clean a batch of entities.
 

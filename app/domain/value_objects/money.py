@@ -6,7 +6,6 @@ Provides type-safe monetary values with validation and operations.
 
 from dataclasses import dataclass
 from decimal import ROUND_HALF_UP, Decimal
-from typing import Union
 
 
 @dataclass(frozen=True)
@@ -23,7 +22,7 @@ class Money:
 
     amount: Decimal
 
-    def __init__(self, amount: Union[Decimal, float, int, str]) -> None:
+    def __init__(self, amount: Decimal | float | int | str) -> None:
         """
         Initialize money with validation.
 
@@ -49,7 +48,7 @@ class Money:
         """Add two money amounts."""
         return Money(self.amount + other.amount)
 
-    def __mul__(self, factor: Union[int, float, Decimal]) -> "Money":
+    def __mul__(self, factor: int | float | Decimal) -> "Money":
         """Multiply money by a factor."""
         return Money(self.amount * Decimal(str(factor)))
 
