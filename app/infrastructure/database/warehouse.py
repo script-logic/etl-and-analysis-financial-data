@@ -3,7 +3,6 @@ Database warehouse initialization and session management.
 """
 
 from pathlib import Path
-from typing import Any
 
 from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import Session, sessionmaker
@@ -37,7 +36,7 @@ class Warehouse:
 
     def _initialize(self) -> None:
         """Create engine and session factory."""
-        connect_args: dict[Any, Any] = {
+        connect_args: dict[str, str | bool | int] = {
             "check_same_thread": False,
             "timeout": 15,
         }

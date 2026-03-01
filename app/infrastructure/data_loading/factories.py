@@ -3,7 +3,6 @@ Factory for creating data loaders.
 """
 
 from pathlib import Path
-from typing import Dict, Type
 
 from structlog import get_logger
 
@@ -22,7 +21,7 @@ class LoaderFactory:
     """
 
     def __init__(self) -> None:
-        self._loaders: Dict[str, Type[DataLoader]] = {}
+        self._loaders: dict[str, type[DataLoader]] = {}
         self._register_defaults()
 
     def _register_defaults(self):
@@ -30,7 +29,7 @@ class LoaderFactory:
         self.register(".xlsx", TransactionExcelLoader)
         self.register(".json", ClientJsonLoader)
 
-    def register(self, extension: str, loader_class: Type[DataLoader]) -> None:
+    def register(self, extension: str, loader_class: type[DataLoader]) -> None:
         """Register a loader for a file extension."""
         if extension in self._loaders:
             logger.warning(f"Overwriting loader for {extension}")

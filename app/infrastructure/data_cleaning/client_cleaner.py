@@ -1,4 +1,3 @@
-from typing import List, Optional
 from uuid import UUID
 
 from structlog import get_logger
@@ -17,11 +16,11 @@ class ClientCleaner(DataCleaner[Client]):
     Applies validation rules and filters out invalid clients.
     """
 
-    def __init__(self, rules: Optional[List[NonFixableRule[Client]]] = None):
+    def __init__(self, rules: list[NonFixableRule[Client]] | None = None):
         """Initialize cleaner with rules."""
         self.rules = rules or self._get_default_rules()
 
-    def _get_default_rules(self) -> List[NonFixableRule[Client]]:
+    def _get_default_rules(self) -> list[NonFixableRule[Client]]:
         """Get default validation rules."""
         return [
             ClientIdRule(),

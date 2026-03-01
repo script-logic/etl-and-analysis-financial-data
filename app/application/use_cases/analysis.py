@@ -90,15 +90,11 @@ class RunAnalysisUseCase:
         """
         logger.info("Starting data analysis")
 
+        report_dir, metadata_dir = self.report_service.create_report_folder()
+
         if generate_plots:
-            report_dir, metadata_dir = (
-                self.report_service.create_report_folder()
-            )
             self.viz_service = VisualizationService(metadata_dir)
-        else:
-            report_dir, metadata_dir = (
-                self.report_service.create_report_folder()
-            )
+
         session = self.warehouse.get_session()
 
         try:

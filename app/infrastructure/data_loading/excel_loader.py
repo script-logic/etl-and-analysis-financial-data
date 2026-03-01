@@ -1,16 +1,17 @@
 import re
 import zipfile
+from collections.abc import Iterator
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Iterator, Optional
+from typing import Any, ClassVar
 from uuid import UUID
 
 import pandas as pd
-from openpyxl import load_workbook
+from openpyxl import Workbook, load_workbook
 from openpyxl.worksheet.worksheet import Worksheet
 from structlog import get_logger
 
-from app.domain.entities import FinanceServiceType, PaymentMethod, Transaction
+from app.domain.entities import Transaction
 
 from .interfaces import ExcelLoader
 
@@ -26,7 +27,7 @@ class TransactionExcelLoader(ExcelLoader[Transaction]):
         amount, payment_method, city, consultant
     """
 
-    REQUIRED_COLUMNS = {
+    REQUIRED_COLUMNS: ClassVar = {
         "transaction_id",
         "client_id",
         "transaction_date",
@@ -40,7 +41,7 @@ class TransactionExcelLoader(ExcelLoader[Transaction]):
     MAX_FILE_SIZE = 100 * 1024 * 1024
     MAX_ROWS = 1_000_000
     MAX_COLUMNS = 50
-    ALLOWED_EXTENSIONS = {".xlsx"}
+    ALLOWED_EXTENSIONS: ClassVar = {".xlsx"}
 
     def __init__(self, sheet_name: str | int = 0, header_row: int = 1):
         """
@@ -122,7 +123,7 @@ class TransactionExcelLoader(ExcelLoader[Transaction]):
         except Exception:
             return False
 
-    def _get_worksheet(self, workbook) -> Worksheet:
+    def _get_worksheet(self, workbook: Workbook) -> Worksheet:
         """Get worksheet by name or index safely."""
         if isinstance(self.sheet_name, str):
             if self.sheet_name not in workbook.sheetnames:
@@ -185,7 +186,7 @@ class TransactionExcelLoader(ExcelLoader[Transaction]):
             worksheet = self._get_worksheet(workbook)
 
             if worksheet.max_row < self.header_row:
-                logger.warning("Worksheet is empty or has no header row")
+                logger.debug("Worksheet is empty or has no header row")
                 return
 
             if worksheet.max_row - self.header_row > self.MAX_ROWS:
@@ -238,7 +239,7 @@ class TransactionExcelLoader(ExcelLoader[Transaction]):
                     current_row += 1
 
                 except Exception as e:
-                    logger.warning(f"Failed to parse row {current_row}: {e}")
+                    logger.error(f"Failed to parse row {current_row}: {e}")
                     continue
 
             logger.info(f"Successfully loaded {rows_processed} transactions")
@@ -267,7 +268,7 @@ class TransactionExcelLoader(ExcelLoader[Transaction]):
 
     def _row_to_transaction(
         self, row_data: dict[str, Any]
-    ) -> Optional[Transaction]:
+    ) -> Transaction | None:
         """
         Convert Excel row data to Transaction entity.
         """
@@ -311,10 +312,10 @@ class TransactionExcelLoader(ExcelLoader[Transaction]):
             )
 
         except Exception as e:
-            logger.warning(f"Failed to parse row: {e}")
+            logger.error(f"Failed to parse row: {e}")
             return None
 
-    def _parse_uuid(self, value: Any) -> Optional[UUID]:
+    def _parse_uuid(self, value: Any) -> UUID | None:
         """Parse UUID from various formats safely."""
         if value is None or value == "":
             return None
@@ -335,7 +336,7 @@ class TransactionExcelLoader(ExcelLoader[Transaction]):
             logger.debug(f"Invalid UUID: {value}")
             return None
 
-    def _parse_date(self, value: Any) -> Optional[datetime]:
+    def _parse_date(self, value: Any) -> datetime | None:
         """Parse date with fallback."""
         if value is None or value in ("INVALID_DATE", ""):
             return None
@@ -371,7 +372,7 @@ class TransactionExcelLoader(ExcelLoader[Transaction]):
         except Exception:
             return None
 
-    def _parse_amount(self, value: Any) -> Optional[float]:
+    def _parse_amount(self, value: Any) -> float | None:
         """Parse amount with comma decimal separator safely."""
         if value is None:
             return None
@@ -407,7 +408,7 @@ class TransactionExcelLoader(ExcelLoader[Transaction]):
         cleaned = str(value).strip()
 
         if len(cleaned) > 1000:
-            logger.debug(
+            logger.warning(
                 f"String length suspiciously large: {len(cleaned)} chars"
             )
 
@@ -422,19 +423,3 @@ class TransactionExcelLoader(ExcelLoader[Transaction]):
             )
             return ""
         return str(cell.value) if cell.value is not None else ""
-
-    def _to_service_enum(self, value: str) -> FinanceServiceType:
-        """Convert string to FinanceServiceType enum."""
-        try:
-            return FinanceServiceType(value)
-        except ValueError:
-            logger.debug(f"Unknown service type: {value}, using UNKNOWN")
-            return FinanceServiceType.UNKNOWN
-
-    def _to_payment_enum(self, value: str) -> PaymentMethod:
-        """Convert string to PaymentMethod enum."""
-        try:
-            return PaymentMethod(value)
-        except ValueError:
-            logger.debug(f"Unknown payment method: {value}, using UNKNOWN")
-            return PaymentMethod.UNKNOWN
