@@ -1,23 +1,26 @@
 from abc import ABCMeta
 from threading import Lock
-from typing import Any, Type
+from typing import Any, ClassVar, cast
 
 
 class Singleton(ABCMeta):
-    __instances: dict[Type, object] = {}
-    __lock: Lock = Lock()
+    __instances: ClassVar[dict[type[Any], object]] = {}
+    __lock: ClassVar[Lock] = Lock()
 
-    def __call__(cls, *args: Any, **kwargs: Any):
-        metaclass = type(cls)
-        if cls not in metaclass.__instances:
-            with metaclass.__lock:
-                if cls not in metaclass.__instances:
-                    metaclass.__instances[cls] = super().__call__(
+    def __call__(cls, *args: Any, **kwargs: Any) -> Any:
+        cls_type = cast(type[Any], cls)
+
+        if cls_type not in cls.__instances:
+            with cls.__lock:
+                if cls_type not in cls.__instances:
+                    cls.__instances[cls_type] = super().__call__(
                         *args, **kwargs
                     )
-        return metaclass.__instances[cls]
+        return cls.__instances[cls_type]
 
     @classmethod
-    def clear_singleton(cls):
-        if cls in cls.__instances:
-            del cls.__instances[cls]
+    def clear_singleton(cls, target_class: type[Any] | None = None) -> None:
+        if target_class is None:
+            cls.__instances.clear()
+        else:
+            cls.__instances.pop(target_class, None)

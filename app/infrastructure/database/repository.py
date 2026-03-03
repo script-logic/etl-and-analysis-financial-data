@@ -4,10 +4,9 @@ Repository pattern for database access.
 Separates business logic from data access logic.
 """
 
-import json
 from datetime import datetime, timedelta
 from sqlite3 import IntegrityError
-from typing import Any, Dict, List, Optional, TypedDict
+from typing import Any, TypedDict
 
 from sqlalchemy import and_, case, desc, func
 from sqlalchemy.orm import Session
@@ -22,6 +21,7 @@ logger = get_logger(__name__)
 
 class LevelValues(TypedDict):
     """Net worth levels."""
+
     name: str
     revenue: float
     count: int
@@ -29,6 +29,7 @@ class LevelValues(TypedDict):
 
 class ClientSegmentAnalysis(TypedDict):
     """Analysis result by client segment."""
+
     segment: str
     total_revenue: float
     transaction_count: int
@@ -74,7 +75,7 @@ class TransactionRepository:
 
         self.session.merge(orm_obj)
 
-    def add_many(self, transactions: List[Transaction]) -> None:
+    def add_many(self, transactions: list[Transaction]) -> None:
         """Bulk insert multiple transactions"""
 
         for transaction in transactions:
@@ -89,7 +90,7 @@ class TransactionRepository:
 
     def get_top_services_by_count(
         self, limit: int = 5
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Get top N services by number of orders.
 
@@ -100,7 +101,8 @@ class TransactionRepository:
             List of dicts with service name and order count
         """
         result = (
-            self.session.query(
+            self.session
+            .query(
                 TransactionTable.raw_service.label("service"),
                 func.count().label("order_count"),
             )
@@ -112,7 +114,7 @@ class TransactionRepository:
 
         return [{"service": r.service, "count": r.order_count} for r in result]
 
-    def get_service_with_max_revenue(self) -> Optional[Dict[str, Any]]:
+    def get_service_with_max_revenue(self) -> dict[str, Any] | None:
         """
         Find service with highest total revenue.
 
@@ -120,7 +122,8 @@ class TransactionRepository:
             Dict with service name and total revenue, or None if no data
         """
         result = (
-            self.session.query(
+            self.session
+            .query(
                 TransactionTable.raw_service.label("service"),
                 func.sum(TransactionTable.amount).label("total_revenue"),
             )
@@ -133,7 +136,7 @@ class TransactionRepository:
             return {"service": result.service, "revenue": result.total_revenue}
         return None
 
-    def get_avg_amount_by_city(self) -> List[Dict[str, Any]]:
+    def get_avg_amount_by_city(self) -> list[dict[str, Any]]:
         """
         Calculate average transaction amount per city.
 
@@ -141,7 +144,8 @@ class TransactionRepository:
             List of dicts with city and average amount
         """
         result = (
-            self.session.query(
+            self.session
+            .query(
                 TransactionTable.city,
                 func.avg(TransactionTable.amount).label("avg_amount"),
                 func.count().label("transaction_count"),
@@ -161,7 +165,7 @@ class TransactionRepository:
             for r in result
         ]
 
-    def get_payment_method_distribution(self) -> Dict[str, float]:
+    def get_payment_method_distribution(self) -> dict[str, float]:
         """
         Calculate percentage distribution of payment methods.
 
@@ -173,7 +177,8 @@ class TransactionRepository:
             return {}
 
         result = (
-            self.session.query(
+            self.session
+            .query(
                 TransactionTable.raw_payment_method.label("method"),
                 (func.count() * 100.0 / total).label("percentage"),
             )
@@ -205,7 +210,8 @@ class TransactionRepository:
         ) - timedelta(days=1)
 
         result = (
-            self.session.query(func.sum(TransactionTable.amount))
+            self.session
+            .query(func.sum(TransactionTable.amount))
             .filter(
                 and_(
                     TransactionTable.transaction_date >= last_month_start,
@@ -219,7 +225,7 @@ class TransactionRepository:
 
     def get_monthly_revenue_trend(
         self, months: int = 6
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Get monthly revenue trend for the last N months of data.
         """
@@ -241,7 +247,8 @@ class TransactionRepository:
         month = func.strftime("%m", TransactionTable.transaction_date)
 
         result = (
-            self.session.query(
+            self.session
+            .query(
                 year.label("year"),
                 month.label("month"),
                 func.sum(TransactionTable.amount).label("revenue"),
@@ -255,19 +262,17 @@ class TransactionRepository:
 
         monthly_data = []
         for r in result:
-            monthly_data.append(
-                {
-                    "year": r.year,
-                    "month": r.month,
-                    "period": f"{r.year}-{r.month}",
-                    "revenue": float(r.revenue) if r.revenue else 0.0,
-                    "transaction_count": r.transaction_count or 0,
-                }
-            )
+            monthly_data.append({
+                "year": r.year,
+                "month": r.month,
+                "period": f"{r.year}-{r.month}",
+                "revenue": float(r.revenue) if r.revenue else 0.0,
+                "transaction_count": r.transaction_count or 0,
+            })
 
         return monthly_data
 
-    def get_service_performance(self) -> List[Dict[str, Any]]:
+    def get_service_performance(self) -> list[dict[str, Any]]:
         """
         Comprehensive service performance analysis.
 
@@ -275,7 +280,8 @@ class TransactionRepository:
             List of services with revenue, count, avg, min, max.
         """
         result = (
-            self.session.query(
+            self.session
+            .query(
                 TransactionTable.raw_service.label("service"),
                 func.count().label("order_count"),
                 func.sum(TransactionTable.amount).label("total_revenue"),
@@ -301,7 +307,7 @@ class TransactionRepository:
             for r in result
         ]
 
-    def enrich_with_percentages(self, services: List[Dict]) -> List[Dict]:
+    def enrich_with_percentages(self, services: list[dict]) -> list[dict]:
         """Add percentage columns to service analysis."""
         if not services:
             return services
@@ -348,12 +354,12 @@ class ClientRepository:
         )
         self.session.merge(orm_obj)
 
-    def add_many(self, clients: List[Client]) -> None:
+    def add_many(self, clients: list[Client]) -> None:
         """Bulk insert multiple clients."""
         for client in clients:
             self.add(client)
 
-    def get_revenue_by_net_worth_level(self) -> List[LevelValues]:
+    def get_revenue_by_net_worth_level(self) -> list[LevelValues]:
         """
         Analyze revenue by client net worth level.
 
@@ -361,7 +367,8 @@ class ClientRepository:
             List with revenue per net worth level
         """
         result = (
-            self.session.query(
+            self.session
+            .query(
                 ClientTable.net_worth,
                 func.sum(TransactionTable.amount).label("total_revenue"),
                 func.count(TransactionTable.id).label("transaction_count"),
@@ -395,7 +402,7 @@ class ClientRepository:
 
         return list(levels.values())
 
-    def get_detailed_revenue_by_segment(self) -> List[ClientSegmentAnalysis]:
+    def get_detailed_revenue_by_segment(self) -> list[ClientSegmentAnalysis]:
         """
         Detailed analysis of revenue by client net worth segments.
 
@@ -413,7 +420,8 @@ class ClientRepository:
         ).label("segment")
 
         result = (
-            self.session.query(
+            self.session
+            .query(
                 segment_case,
                 func.count(ClientTable.id.distinct()).label("client_count"),
                 func.sum(TransactionTable.amount).label("total_revenue"),
@@ -444,7 +452,8 @@ class ClientRepository:
     def get_clients_without_transactions(self) -> int:
         """Count clients who never made a transaction."""
         return (
-            self.session.query(ClientTable)
+            self.session
+            .query(ClientTable)
             .outerjoin(
                 TransactionTable, ClientTable.id == TransactionTable.client_id
             )
@@ -460,25 +469,26 @@ class AnalysisRepository:
         self.session = session
 
     def save_result(
-        self, name: str, result: Any, parameters: Optional[Dict] = None
+        self, name: str, result: Any, parameters: dict | None = None
     ) -> None:
         """Save analysis result to database."""
         orm_obj = AnalysisResultTable(
             analysis_name=name,
-            result_json=json.dumps(result, ensure_ascii=False, default=str),
-            parameters=json.dumps(parameters) if parameters else None,
+            result_json=result,
+            parameters=parameters,
         )
         self.session.add(orm_obj)
 
-    def get_latest_result(self, name: str) -> Optional[Dict]:
+    def get_latest_result(self, name: str) -> dict | None:
         """Get most recent analysis result."""
         result = (
-            self.session.query(AnalysisResultTable)
+            self.session
+            .query(AnalysisResultTable)
             .filter(AnalysisResultTable.analysis_name == name)
             .order_by(desc(AnalysisResultTable.created_at))
             .first()
         )
 
         if result:
-            return json.loads(result.result_json)
+            return result.result_json
         return None

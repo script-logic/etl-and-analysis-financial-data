@@ -23,6 +23,9 @@ rebuild:
 	$(MAKE) build
 	$(MAKE) up
 
+fix:
+	poetry run ruff check --fix
+
 lint:
 	poetry run ruff check .
 	poetry run mypy .

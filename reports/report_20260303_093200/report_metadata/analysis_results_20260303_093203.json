@@ -412,9 +412,7 @@
       72142381.17
     ],
     "metrics": {
-      "count_mae": 161.9470595739252,
       "count_r2": 0.8829587150654288,
-      "revenue_mae": 5159973.6036675675,
       "revenue_r2": 0.953505153680676
     },
     "count_trend": "decreasing",
