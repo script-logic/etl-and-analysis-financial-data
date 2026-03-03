@@ -44,14 +44,6 @@ class Money:
 
         object.__setattr__(self, "amount", decimal_amount)
 
-    def __add__(self, other: "Money") -> "Money":
-        """Add two money amounts."""
-        return Money(self.amount + other.amount)
-
-    def __mul__(self, factor: int | float | Decimal) -> "Money":
-        """Multiply money by a factor."""
-        return Money(self.amount * Decimal(str(factor)))
-
     def __str__(self) -> str:
         return f"{self.amount:,.2f}"
 

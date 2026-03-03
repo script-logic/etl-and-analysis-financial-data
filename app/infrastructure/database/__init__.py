@@ -1,24 +1,24 @@
 from .models import (
+    AnalysisResultTable,
     Base,
     ClientTable,
     TransactionTable,
-    AnalysisResultTable,
 )
 from .repository import (
-    TransactionRepository,
-    ClientRepository,
     AnalysisRepository,
+    ClientRepository,
+    TransactionRepository,
 )
 from .warehouse import Warehouse, create_warehouse
 
 __all__ = [
-    "Base",
-    "ClientTable",
-    "TransactionTable",
-    "AnalysisResultTable",
-    "TransactionRepository",
-    "ClientRepository",
     "AnalysisRepository",
+    "AnalysisResultTable",
+    "Base",
+    "ClientRepository",
+    "ClientTable",
+    "TransactionRepository",
+    "TransactionTable",
     "Warehouse",
     "create_warehouse",
 ]

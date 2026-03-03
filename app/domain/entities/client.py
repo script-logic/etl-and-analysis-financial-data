@@ -5,9 +5,11 @@ Uses Pydantic for validation and serialization.
 """
 
 from enum import StrEnum
+from typing import Annotated
 from uuid import UUID
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field
+from pydantic.functional_validators import BeforeValidator
 
 
 class Gender(StrEnum):
@@ -45,6 +47,16 @@ class NetWorthLevel(StrEnum):
             return cls.HIGH
 
 
+def validate_net_worth(v: float | None) -> float | None:
+    """Validate and clean net worth value."""
+    if v is None:
+        return None
+    return round(float(v), 2)
+
+
+NetWorthField = Annotated[float | None, BeforeValidator(validate_net_worth)]
+
+
 class Client(BaseModel):
     """
     Client domain entity.
@@ -61,17 +73,9 @@ class Client(BaseModel):
         default=None, ge=0, le=150, description="Client age (0-150)"
     )
     gender: Gender = Field(default=Gender.UNKNOWN, description="Client gender")
-    net_worth: float | None = Field(
+    net_worth: NetWorthField = Field(
         default=None, ge=0, description="Client net worth"
     )
-
-    @field_validator("net_worth", mode="before")
-    @classmethod
-    def validate_net_worth(cls, v: float | None) -> float | None:
-        """Validate and clean net worth value."""
-        if v is None:
-            return None
-        return round(float(v), 2)
 
     @property
     def net_worth_level(self) -> NetWorthLevel | None:
@@ -85,12 +89,11 @@ class Client(BaseModel):
         """Check if client has valid ID."""
         return self.id is not None
 
-    class Config:
-        """Pydantic configuration."""
-
-        frozen = True
-        use_enum_values = False
-        json_encoders = {
+    model_config = ConfigDict(
+        frozen=True,
+        use_enum_values=False,
+        json_encoders={
             UUID: str,
             Gender: lambda v: v.value,
-        }
+        },
+    )

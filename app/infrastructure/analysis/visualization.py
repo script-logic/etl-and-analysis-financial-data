@@ -110,7 +110,7 @@ class VisualizationService:
             )
 
         top_5 = df.nlargest(5, "total_revenue")
-        others = df.iloc[5:]
+        others = df[~df.index.isin(top_5.index)]
 
         if not others.empty:
             pie_data = pd.concat([

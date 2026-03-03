@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
 from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_absolute_error, r2_score
+from sklearn.metrics import r2_score
 from structlog import get_logger
 
 logger = get_logger(__name__)
@@ -24,14 +24,10 @@ class DemandForecast:
     Predicts future transaction counts and revenue based on historical trends.
     """
 
-    def __init__(self, confidence_level: float = 0.95):
+    def __init__(self) -> None:
         """
         Initialize forecast model.
-
-        Args:
-            confidence_level: Confidence level for prediction intervals
         """
-        self.confidence_level = confidence_level
         self.model_counts: LinearRegression | None = None
         self.model_revenue: LinearRegression | None = None
         self.history: pd.DataFrame | None = None
@@ -59,7 +55,6 @@ class DemandForecast:
             "revenue": revenues,
         })
         df = df.sort_values("date")
-
         df["days"] = (df["date"] - df["date"].min()).dt.days
 
         days_array = df["days"].to_numpy().reshape(-1, 1)
@@ -141,10 +136,6 @@ class DemandForecast:
             y_hist_raw = self.history["count"].to_numpy()
             y_hist: NDArray[np.float64] = y_hist_raw.astype(np.float64)
             y_pred = self.model_counts.predict(X_hist)
-
-            result["metrics"]["count_mae"] = float(
-                mean_absolute_error(y_hist, y_pred)
-            )
             result["metrics"]["count_r2"] = float(r2_score(y_hist, y_pred))
 
             coef = float(self.model_counts.coef_[0])
@@ -168,10 +159,6 @@ class DemandForecast:
             y_hist_rev_raw = self.history["revenue"].to_numpy()
             y_hist_rev: NDArray[np.float64] = y_hist_rev_raw.astype(np.float64)
             y_pred = self.model_revenue.predict(X_hist_rev)
-
-            result["metrics"]["revenue_mae"] = float(
-                mean_absolute_error(y_hist_rev, y_pred)
-            )
             result["metrics"]["revenue_r2"] = float(
                 r2_score(y_hist_rev, y_pred)
             )
@@ -186,30 +173,6 @@ class DemandForecast:
             )
 
         return result
-
-
-def get_seasonality(self) -> dict[str, float]:
-    """
-    Detect simple seasonality patterns.
-
-    Returns:
-        Dictionary with seasonality metrics
-    """
-    if self.history is None or len(self.history) < 12:
-        return {}
-
-    hist = self.history.copy()
-    hist = hist.set_index("date")
-
-    monthly_avg = hist["count"].resample("ME").mean()
-
-    result: dict[str, float] = {}
-    for date, avg in monthly_avg.items():
-        month_num = date.month
-        month_key = f"month_{month_num:02d}"
-        result[month_key] = float(avg)
-
-    return result
 
 
 def create_demand_forecast(

@@ -9,9 +9,9 @@ from .transaction_cleaner import TransactionCleaner
 
 __all__ = [
     "BaseValidationRule",
-    "NonFixableRule",
-    "FixableRule",
-    "DataCleaner",
-    "TransactionCleaner",
     "ClientCleaner",
+    "DataCleaner",
+    "FixableRule",
+    "NonFixableRule",
+    "TransactionCleaner",
 ]
